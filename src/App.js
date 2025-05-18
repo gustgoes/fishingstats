@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { Fish } from "lucide-react";
 import "@fontsource/press-start-2p";  // Fonte pixelada
 
-// XP tabela para os níveis
+// --- Supabase config ---
+const supabaseUrl = "https://qytcpbxhfuapugpswaaa.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dGNwYnhoZnVhcHVncHN3YWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NzgyNzksImV4cCI6MjA2MzE1NDI3OX0.yCIQkPMQzhW1FVk1hCBoeLkRoYQX7MKydLPO5DegpMU";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// --- XP tabela para os níveis ---
 const fishingLevelXp = [
   55,135,255,417,623,875,1174,1521,1918,2366,2865,3417,4022,4681,5396,6165,6992,7875,8816,9815,10872,11989,13166,14403,15702,17061,18482,19965,21512,25385,29800,34810,40474,46855,54018,62034,70976,80925,91962,104175,117656,132501,148813,166696,186264,148921,163002,178562,195795,313638,345952,259854,286232,315649,348475,385123,426055,471781,522873,579974,643808,715185,795011,884300,984197,1095997,1221172,1361378,1518482,1694567,1891954,2113226,2361237,2639153,2950471,3299040,3689099,4125312,4612793,5157136,5764455,6441416,7195262,8033890,8965895,10000648,11148361,12420151,13828124,15385449,17106438,19006644,21103949,23417679,25968694,28779509,31874457,35279924
 ];
@@ -65,16 +71,34 @@ const HabboStats = () => {
   const [expandedPlayer, setExpandedPlayer] = useState(null);
   const [data, setData] = useState(null); // Resultado da última busca
 
+  // Carregar ranking global ao entrar
   useEffect(() => {
     setLang(hotelLangMap[hotel] || "pt");
-    const storedRanking = (JSON.parse(localStorage.getItem(`ranking-${hotel}`)) || []).filter(p => p && p.username);
-    setRanking(storedRanking);
+    fetchRankingGlobal();
     setData(null);
     setExpandedPlayer(null);
+    // eslint-disable-next-line
   }, [hotel]);
 
   const t = translations[lang] || translations["pt"];
 
+  // --- FUNÇÕES SUPABASE ---
+  async function savePlayerGlobal(player) {
+    await supabase
+      .from('ranking')
+      .upsert([player], { onConflict: ['username'] });
+  }
+
+  async function fetchRankingGlobal() {
+    const { data } = await supabase
+      .from('ranking')
+      .select('*')
+      .order('level', { ascending: false })
+      .order('experience', { ascending: false });
+    setRanking((data || []).filter(p => p && p.username));
+  }
+
+  // --- Buscar e atualizar ranking global ---
   const fetchStats = async () => {
     setLoading(true);
     setError("");
@@ -92,14 +116,12 @@ const HabboStats = () => {
       const fishingData = await res.json();
       if (!fishingData || typeof fishingData.level === "undefined") throw new Error(t.skillsMissing);
 
-      // Badge/missão real
       const badges = Array.isArray(userData.selectedBadges) && userData.selectedBadges.length > 0
         ? userData.selectedBadges
         : [];
 
       const avatarUrl = `https://www.habbo.${hotel}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`;
 
-      // Usa sempre o nome pesquisado, capitalizado
       const newPlayer = {
         username: capitalize(username),
         level: fishingData.level,
@@ -112,20 +134,11 @@ const HabboStats = () => {
         rod: fishingData.rod,
       };
 
-      setRanking(prevRanking => {
-        const filtered = prevRanking.filter(
-          p =>
-            !!p.username &&
-            !!newPlayer.username &&
-            String(p.username).toLowerCase() !== String(newPlayer.username).toLowerCase()
-        );
-        const updated = [...filtered, newPlayer];
-        const sorted = updated.sort(
-          (a, b) => b.level - a.level || b.experience - a.experience
-        );
-        localStorage.setItem(`ranking-${hotel}`, JSON.stringify(sorted));
-        return sorted;
-      });
+      // Salva no ranking global (Supabase)
+      await savePlayerGlobal(newPlayer);
+
+      // Busca ranking global atualizado
+      await fetchRankingGlobal();
 
       setData(newPlayer);
 
