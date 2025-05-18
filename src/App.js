@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Fish } from "lucide-react";
-import "@fontsource/press-start-2p";  // Fonte pixelada
+import "@fontsource/press-start-2p";
 
-// --- Supabase config ---
+// Supabase config
 const supabaseUrl = "https://qytcpbxhfuapugpswaaa.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5dGNwYnhoZnVhcHVncHN3YWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NzgyNzksImV4cCI6MjA2MzE1NDI3OX0.yCIQkPMQzhW1FVk1hCBoeLkRoYQX7MKydLPO5DegpMU";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- XP tabela para os níveis ---
+// XP tabela para os níveis
 const fishingLevelXp = [
   55,135,255,417,623,875,1174,1521,1918,2366,2865,3417,4022,4681,5396,6165,6992,7875,8816,9815,10872,11989,13166,14403,15702,17061,18482,19965,21512,25385,29800,34810,40474,46855,54018,62034,70976,80925,91962,104175,117656,132501,148813,166696,186264,148921,163002,178562,195795,313638,345952,259854,286232,315649,348475,385123,426055,471781,522873,579974,643808,715185,795011,884300,984197,1095997,1221172,1361378,1518482,1694567,1891954,2113226,2361237,2639153,2950471,3299040,3689099,4125312,4612793,5157136,5764455,6441416,7195262,8033890,8965895,10000648,11148361,12420151,13828124,15385449,17106438,19006644,21103949,23417679,25968694,28779509,31874457,35279924
 ];
@@ -17,7 +17,7 @@ function getNextLevelXp(currentLevel) {
 }
 function capitalize(str) {
   if (!str) return "";
-  return str[0].toUpperCase() + str.slice(1);
+  return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
 const translations = {
@@ -61,7 +61,7 @@ function Badge({ code, name }) {
   );
 }
 
-const HabboStats = () => {
+const App = () => {
   const [username, setUsername] = useState("");
   const [hotel, setHotel] = useState("com.br");
   const [lang, setLang] = useState("pt");
@@ -69,43 +69,45 @@ const HabboStats = () => {
   const [error, setError] = useState("");
   const [ranking, setRanking] = useState([]);
   const [expandedPlayer, setExpandedPlayer] = useState(null);
-  const [data, setData] = useState(null); // Resultado da última busca
+  const [data, setData] = useState(null);
 
-  // Carregar ranking global ao entrar
   useEffect(() => {
     setLang(hotelLangMap[hotel] || "pt");
     fetchRankingGlobal();
     setData(null);
     setExpandedPlayer(null);
-    // eslint-disable-next-line
   }, [hotel]);
 
   const t = translations[lang] || translations["pt"];
 
-  // --- FUNÇÕES SUPABASE ---
+  // Salva SEMPRE username minúsculo + hotel correto
   async function savePlayerGlobal(player) {
     await supabase
       .from('ranking')
-      .upsert([player], { onConflict: ['username'] });
+      .upsert([player], { onConflict: ['username', 'hotel'] });
   }
 
+  // Busca SÓ do hotel selecionado
   async function fetchRankingGlobal() {
     const { data } = await supabase
       .from('ranking')
       .select('*')
+      .eq('hotel', hotel)
       .order('level', { ascending: false })
       .order('experience', { ascending: false });
     setRanking((data || []).filter(p => p && p.username));
   }
 
-  // --- Buscar e atualizar ranking global ---
+  // Pesquisa e salva corretamente
   const fetchStats = async () => {
     setLoading(true);
     setError("");
     setData(null);
     setExpandedPlayer(null);
     try {
-      const userRes = await fetch(`https://origins.habbo.${hotel}/api/public/users?name=${username}`);
+      const usernameKey = username.trim().toLowerCase();
+
+      const userRes = await fetch(`https://origins.habbo.${hotel}/api/public/users?name=${usernameKey}`);
       if (!userRes.ok) throw new Error(t.userNotFound);
       const userData = await userRes.json();
       const uniqueId = userData.uniqueId;
@@ -123,7 +125,7 @@ const HabboStats = () => {
       const avatarUrl = `https://www.habbo.${hotel}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`;
 
       const newPlayer = {
-        username: capitalize(username),
+        username: usernameKey,
         level: fishingData.level,
         experience: fishingData.experience,
         avatarUrl,
@@ -132,14 +134,11 @@ const HabboStats = () => {
         fishCaught: fishingData.fishCaught,
         goldFishCaught: fishingData.goldFishCaught,
         rod: fishingData.rod,
+        hotel
       };
 
-      // Salva no ranking global (Supabase)
       await savePlayerGlobal(newPlayer);
-
-      // Busca ranking global atualizado
       await fetchRankingGlobal();
-
       setData(newPlayer);
 
     } catch (err) {
@@ -149,7 +148,6 @@ const HabboStats = () => {
     }
   };
 
-  // Barra de progresso XP
   const progress = data && getNextLevelXp(data.level) > 0
     ? Math.min((data.experience / getNextLevelXp(data.level)) * 100, 100)
     : 0;
@@ -166,9 +164,8 @@ const HabboStats = () => {
     }
   };
 
-  // Index do player da pesquisa no ranking (pode ser -1)
   const dataIndexInRanking = data
-    ? ranking.findIndex(p => p.username.toLowerCase() === data.username.toLowerCase())
+    ? ranking.findIndex(p => p.username === data.username)
     : -1;
 
   return (
@@ -227,7 +224,7 @@ const HabboStats = () => {
             />
             <div>
               <p className="text-lg font-semibold text-[#4a5d75]">
-                {data.username}
+                {capitalize(data.username)}
                 {dataIndexInRanking !== -1 &&
                   <span className="ml-2 text-xs text-[#6c757d]">({t.rank}: {dataIndexInRanking + 1})</span>
                 }
@@ -268,7 +265,7 @@ const HabboStats = () => {
       <h3 className="text-lg font-semibold text-center text-[#4a5d75]">{t.rank}</h3>
       <ul className="space-y-3">
         {ranking.map((player, index) => (
-          <li key={player.username} className="bg-[#f0f6fb] p-4 rounded-md shadow-md">
+          <li key={player.username + player.hotel} className="bg-[#f0f6fb] p-4 rounded-md shadow-md">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <span className="text-xl font-bold text-[#5675c2] mr-4">{index + 1}</span>
@@ -279,7 +276,7 @@ const HabboStats = () => {
                   onClick={() => handlePlayerClick(player)}
                   style={{ imageRendering: "pixelated" }}
                 />
-                <span className="text-lg font-semibold text-[#4a5d75] ml-4">{player.username}</span>
+                <span className="text-lg font-semibold text-[#4a5d75] ml-4">{capitalize(player.username)}</span>
               </div>
             </div>
             {expandedPlayer && expandedPlayer.username === player.username && (
@@ -316,4 +313,4 @@ const HabboStats = () => {
   );
 };
 
-export default HabboStats;
+export default App;
