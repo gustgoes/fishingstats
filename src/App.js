@@ -499,10 +499,10 @@ const App = () => {
                   </div>
                   <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
                   <div className="flex flex-wrap gap-3 mt-1 font-mono text-xs">
-                    {player.mission && <span style={{ color: "#ffeac2" }}><strong>Missão:</strong> {player.mission}</span>}
+                    {player.mission && <span style={{ color: "#ffeac2" }}><strong></strong> {player.mission}</span>}
                     {player.badges && player.badges.length > 0 && (
                       <span>
-                        <strong style={{ color: "#c1a965" }}>Emblemas:</strong>
+                        <strong style={{ color: "#c1a965" }}></strong>
                         {player.badges.slice(0, 3).map((badge, idx) => (
                           <Badge key={badge.code || idx} code={badge.code} name={badge.name} />
                         ))}
