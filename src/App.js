@@ -10,17 +10,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Dados de XP por Nível ---
 const fishingLevelXp = [
-  55, 135, 255, 417, 623, 875, 1174, 1521, 1918, 2366, 2865, 3417, 4022, 4681, 5396, 6165, 6992,
-  7875, 8816, 9815, 10872, 11989, 13166, 14403, 15702, 17061, 18482, 19965, 21512, 25385, 29800,
-  34810, 40474, 46855, 54018, 62034, 70976, 80925, 91962, 104175, 117656, 132501, 148813, 166696,
-  186264, 148921, 163002, 178562, 195795, 313638, 345952, 259854, 286232, 315649, 348475, 385123,
-  426055, 471781, 522873, 579974, 643808, 715185, 795011, 884300, 984197, 1095997, 1221172,
-  1361378, 1518482, 1694567, 1891954, 2113226, 2361237, 2639153, 2950471, 3299040, 3689099,
-  4125312, 4612793, 5157136, 5764455, 6441416, 7195262, 8033890, 8965895, 10000648, 11148361,
-  12420151, 13828124, 15385449, 17106438, 19006644, 21103949, 23417679, 25968694, 28779509,
-  31874457, 35279924
+  55, 135, 255, 417, 623, 875, 1174, 1521, 1918, 2366, 2865, 3417, 4022,
+  4681, 5396, 6165, 6992, 7875, 8816, 9815, 10872, 11989, 13166, 14403,
+  15702, 17061, 18482, 19965, 21512, 25385, 29800, 34810, 40474, 46855,
+  54018, 62034, 70976, 80925, 91962, 104175, 117656, 132501, 148813, 166696,
+  186264, 207633, 230924, 256266, 283791, 313638, 345952, 380883, 418587,
+  459228, 502975, 550002, 600491, 654632, 712620, 774657, 840952, 911722,
+  987190, 1067589, 1153155, 1244137, 1340788, 1443369, 1552151, 1682257,
+  1822728, 1974347, 2137953, 2314446, 2504787, 2710007, 2931209, 3169573,
+  3426362, 3702927, 4000713, 4321262, 4666226, 5037369, 5436574, 5865853,
+  6327356, 6823377, 7356365, 7928932, 8543867, 9204142, 9912930, 10673611,
+  11489788, 12365302, 13304246, 14310977
 ];
-
 // --- Funções Auxiliares ---
 const getNextLevelXp = (currentLevel) => fishingLevelXp[(currentLevel || 1) - 1] || 0;
 const capitalize = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "");
@@ -167,7 +168,7 @@ const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClic
     <div className="mt-2">
       <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
       {player.badges && player.badges.length > 0 ? (
-<div className="flex flex-wrap gap-1 mt-1 items-start"> {player.badges.map((badge, idx) => <Badge key={badge.code || `badge-${idx}`} code={badge.code} name={badge.name} />)} </div>
+   <div className="flex flex-wrap gap-1 mt-1 items-center">  {player.badges.map((badge, idx) => <Badge key={badge.code || `badge-${idx}`} code={badge.code} name={badge.name} />)} </div>
       ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
     </div>
   </div>
@@ -194,6 +195,7 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
       <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
       <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 font-mono text-xs items-center justify-between">
         {player.badges && player.badges.length > 0 && (
+
           <div className="flex gap-0.5">
             {player.badges.slice(0, 2).map((badge, idx) => ( <Badge key={badge.code || `sbadge-${idx}`} code={badge.code} name={badge.name} /> ))}
             {player.badges.length > 2 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 2})</span>}
@@ -240,7 +242,8 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
           <div className="mt-1.5">
             <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
             {player.badges && player.badges.length > 0 ? (
-              <div className="flex flex-wrap gap-1 mt-1"> {player.badges.map((badge, idx) => <Badge key={badge.code || `expbadge-${idx}`} code={badge.code} name={badge.name} />)} </div>
+               <div className="flex flex-wrap gap-1 mt-1 items-center"> 
+ {player.badges.map((badge, idx) => <Badge key={badge.code || `expbadge-${idx}`} code={badge.code} name={badge.name} />)} </div>
             ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
           </div>
           <hr className="border-yellow-700/20 my-2.5"/>
