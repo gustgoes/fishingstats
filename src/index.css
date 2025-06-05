@@ -16,3 +16,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* Estilização da Barra de Rolagem para Webkit (Chrome, Safari, Edge novo) */
+::-webkit-scrollbar {
+  width: 10px; /* Largura da barra de rolagem vertical */
+  height: 10px; /* Altura da barra de rolagem horizontal */
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(28, 22, 14, 0.98); /* Cor de fundo da trilha (cor do card expandido) */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #ffd27f; /* Cor do polegar (cor dos labels) */
+  border-radius: 10px;
+  border: 2px solid rgba(28, 22, 14, 0.98); /* Borda com a cor da trilha */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #ffc76a; /* Cor mais clara ao passar o mouse */
+}
+
+/* Estilização da Barra de Rolagem para Firefox */
+/* Para Firefox mais recentes, você pode precisar de apenas estas duas: */
+.custom-scrollbar-container, body { /* Aplica ao corpo e ao container específico */
+  scrollbar-width: thin;
+  scrollbar-color: #ffd27f rgba(28, 22, 14, 0.98); /* Cor do polegar e cor da trilha */
+}
