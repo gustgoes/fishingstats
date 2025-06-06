@@ -34,7 +34,11 @@ const formatDate = (dateStr) => {
     hour: '2-digit', minute: '2-digit',
   });
 };
-
+// Bandeira
+const getFlagImgForHotel = (hotelCode) => {
+  const flag = FLAGS.find(f => f.code === hotelCode);
+  return flag ? flag.img : ''; // Retorna o caminho da imagem da bandeira
+};
 // --- Dados de Tradução e Flags ---
 const translations = {
   pt: {
@@ -52,12 +56,49 @@ const translations = {
       title: "Progressão XP",
       noData: "Sem histórico de XP para exibir.",
       loading: "Carregando dados do gráfico...",
-      saveError: "Falha ao salvar dados do jogador.", // Nova tradução
-      loadingError: "Falha ao carregar dados." // Nova tradução
+      saveError: "Falha ao salvar dados do jogador.",
+      loadingError: "Falha ao carregar dados."
     },
   },
-};
-const hotelLangMap = { "com.br": "pt", "com": "en", "es": "es" };
+  en: {
+    title: "Habbo Origins Statistics", placeholder: "Username", loading: "Loading...",
+    button: "Search", notFound: "Skill not found", userNotFound: "User not found",
+    skillsMissing: "No skills found. Check if the username is correct.",
+    level: "Level", xp: "Experience", fishCaught: "Fish caught",
+    goldFishCaught: "Golden Fish caught", fishingRod: "Fishing Rod", rodXp: "Rod XP",
+    mission: "Motto", badges: "Badges", language: "Language", hotel: "Hotel", rank: "Rank",
+    online: "Online", offline: "Offline", lastAccess: "Last visit",
+    memberSince: "Member since", lastUpdate: "Data from",
+    autoUpdateStatus: "Background update",
+    nextPage: "Next", prevPage: "Previous", page: "Page",
+    xpChart: {
+      title: "XP Progression",
+      noData: "No XP history to display.",
+      loading: "Loading chart data...",
+      saveError: "Failed to save player data.",
+      loadingError: "Failed to load data."
+    },
+  },
+  es: {
+    title: "Estadísticas de Habbo Origins", placeholder: "Nombre de usuario", loading: "Cargando...",
+    button: "Buscar", notFound: "Habilidad no encontrada", userNotFound: "Usuario no encontrado",
+    skillsMissing: "No se encontraron habilidades. Comprueba si el nombre de usuario es correcto.",
+    level: "Nivel", xp: "Experiencia", fishCaught: "Peces atrapados",
+    goldFishCaught: "Peces Dorados atrapados", fishingRod: "Caña de Pescar", rodXp: "XP de la Caña",
+    mission: "Misión", badges: "Placas", language: "Idioma", hotel: "Hotel", rank: "Ranking",
+    online: "En línea", offline: "Desconectado", lastAccess: "Última visita",
+    memberSince: "Miembro desde", lastUpdate: "Datos de",
+    autoUpdateStatus: "Actualización en segundo plano",
+    nextPage: "Siguiente", prevPage: "Anterior", page: "Página",
+    xpChart: {
+      title: "Progresión de XP",
+      noData: "No hay historial de XP para mostrar.",
+      loading: "Cargando datos del gráfico...",
+      saveError: "Error al guardar los datos del jugador.",
+      loadingError: "Error al cargar los datos."
+    },
+  }
+};const hotelLangMap = { "com.br": "pt", "com": "en", "es": "es" };
 const FLAGS = [
   { code: "com.br", img: "/img/flags/brpt.png", label: "BR/PT" },
   { code: "com", img: "/img/flags/eng.png", label: "EN" },
@@ -65,7 +106,7 @@ const FLAGS = [
 ];
 
 // --- Constantes ---
-const AUTO_UPDATE_USER_DELAY_MS = 5000;
+const AUTO_UPDATE_USER_DELAY_MS = 3000;
 const AUTO_UPDATE_CYCLE_INTERVAL_MS = 30 * 60 * 1000;
 const LABEL_TEXT_COLOR = "#ffd27f";
 const ITEMS_PER_PAGE = 20;
@@ -196,7 +237,7 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
       <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 font-mono text-xs items-center justify-between">
         {player.badges && player.badges.length > 0 && (
 
-          <div className="flex gap-0.5">
+           <div className="flex flex-wrap gap-1 mt-1 items-center"> 
             {player.badges.slice(0, 2).map((badge, idx) => ( <Badge key={badge.code || `sbadge-${idx}`} code={badge.code} name={badge.name} /> ))}
             {player.badges.length > 2 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 2})</span>}
           </div>
@@ -273,7 +314,13 @@ const App = () => {
   const [expandedProfile, setExpandedProfile] = useState(null);
   const [data, setData] = useState(null);
   const [isAutoUpdatingList, setIsAutoUpdatingList] = useState(false);
-  const [autoUpdateProgress, setAutoUpdateProgress] = useState({ current: 0, total: 0, status: 'inativo', lastRun: null });
+  const [autoUpdateProgress, setAutoUpdateProgress] = useState({ 
+  current: 0, 
+  total: 0, 
+  status: 'inativo', 
+  updatingUser: null, // Guardará { username, hotel }
+  lastRun: null 
+});
   const [currentPage, setCurrentPage] = useState(1);
   const [dailyXpHistory, setDailyXpHistory] = useState([]);
   const [loadingChart, setLoadingChart] = useState(false);
@@ -560,36 +607,109 @@ const App = () => {
     }
   }, [savePlayerGlobal]); // savePlayerGlobal é a única dependência real aqui que pode mudar
 
-  const runFullBackgroundUpdate = useCallback(async (currentHotelForUpdate) => {
-    if (autoUpdateInProgress.current) { console.log("[AUTO_UPDATE_CYCLE] Ciclo já em andamento."); return; }
-    autoUpdateInProgress.current = true; setIsAutoUpdatingList(true);
-    setAutoUpdateProgress(prev => ({ ...prev, current: 0, total: 0, status: `buscando lista em ${currentHotelForUpdate}...`})); // Removido .lastRun da atualização inicial aqui
-    console.log(`[AUTO_UPDATE_CYCLE] Iniciando para ${currentHotelForUpdate}`);
-    try {
-      const { data: usersInDb, error: fetchDbError } = await supabase.from('ranking').select('username').eq('hotel', currentHotelForUpdate).order('updatedat', { ascending: true, nullsFirst: true });
-      if (fetchDbError || !usersInDb) { throw fetchDbError || new Error("Nenhum usuário no DB"); }
-      if (usersInDb.length === 0) { console.log("[AUTO_UPDATE_CYCLE] Sem usuários para atualizar."); setAutoUpdateProgress(prev => ({ ...prev, status: 'sem usuários', total:0, lastRun: new Date().toISOString() })); setIsAutoUpdatingList(false); autoUpdateInProgress.current = false; return; }
-      
-      console.log(`[AUTO_UPDATE_CYCLE] ${usersInDb.length} usuários para processar.`);
-      setAutoUpdateProgress(prev => ({ ...prev, total: usersInDb.length, status: 'processando...' }));
-      let updatedCount = 0;
-      for (let i = 0; i < usersInDb.length; i++) {
-        if (hotel !== currentHotelForUpdate) { console.warn("[AUTO_UPDATE_CYCLE] Hotel mudou, interrompendo ciclo."); setAutoUpdateProgress(prev => ({ ...prev, status: `interrompido (hotel mudou para ${hotel})`})); break; }
-        const result = await fetchAndSaveSingleUserForAutoUpdate(usersInDb[i].username, currentHotelForUpdate);
-        if(result.success) updatedCount++;
-        setAutoUpdateProgress(prev => ({ ...prev, current: i + 1 }));
-        if (i < usersInDb.length - 1) await new Promise(resolve => setTimeout(resolve, AUTO_UPDATE_USER_DELAY_MS));
+  // MODIFICADO: runFullBackgroundUpdate para ser contínuo, persistente e com status dinâmico
+const runFullBackgroundUpdate = useCallback(async (startFresh = false) => {
+  if (autoUpdateInProgress.current) {
+    console.log("[AUTO_UPDATE_PERSISTENT] Ciclo já em andamento.");
+    return;
+  }
+  console.log("[AUTO_UPDATE_PERSISTENT] Iniciando ciclo de atualização...");
+  autoUpdateInProgress.current = true;
+  setIsAutoUpdatingList(true);
+
+  try {
+    let userLists;
+    let startIndex = 0;
+    let totalProcessedBefore = 0;
+
+    // Tenta carregar o estado salvo do ciclo anterior do localStorage
+    if (!startFresh) {
+      try {
+        const savedStateJSON = localStorage.getItem('autoUpdateCycleState');
+        if (savedStateJSON) {
+          const savedState = JSON.parse(savedStateJSON);
+          // Usa o estado salvo apenas se for recente (ex: menos de 1 hora)
+          const isRecent = (new Date().getTime() - savedState.timestamp) < 3600000;
+          if (isRecent) {
+            console.log(`[AUTO_UPDATE_PERSISTENT] Resumindo ciclo anterior do índice ${savedState.currentIndex}.`);
+            userLists = savedState.userLists;
+            startIndex = savedState.currentIndex;
+            totalProcessedBefore = savedState.totalProcessed;
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao ler estado do localStorage, iniciando do zero.", e);
       }
-      console.log(`[AUTO_UPDATE_CYCLE] Ciclo concluído para ${currentHotelForUpdate}. ${updatedCount} atualizados.`);
-      if (hotel === currentHotelForUpdate) fetchRankingGlobal(true, { bypassThrottle: true });
-      setAutoUpdateProgress(prev => ({ ...prev, status: `concluído (${updatedCount} atualizados)`, lastRun: new Date().toISOString() }));
-    } catch (error) {
-      console.error("[AUTO_UPDATE_CYCLE] Erro:", error.message);
-      setAutoUpdateProgress(prev => ({ ...prev, status: `erro (${error.message})`, lastRun: new Date().toISOString()}));
-    } finally {
-      setIsAutoUpdatingList(false); autoUpdateInProgress.current = false;
     }
-  }, [fetchAndSaveSingleUserForAutoUpdate, fetchRankingGlobal, hotel]); // Removido autoUpdateProgress.lastRun como dependência explícita da recriação
+
+    // Se não houver estado salvo/válido, busca novas listas do Supabase
+    if (!userLists) {
+      console.log("[AUTO_UPDATE_PERSISTENT] Buscando novas listas de usuários.");
+      const hotels = ["com.br", "com", "es"];
+      const promises = hotels.map(h =>
+        supabase.from('ranking').select('username').eq('hotel', h).order('updatedat', { ascending: true, nullsFirst: true })
+      );
+      const results = await Promise.all(promises);
+      userLists = {
+        "com.br": results[0].data || [],
+        "com": results[1].data || [],
+        "es": results[2].data || [],
+      };
+    }
+
+    const totalUsers = userLists["com.br"].length + userLists["com"].length + userLists["es"].length;
+    if (totalUsers === 0) {
+      console.log("[AUTO_UPDATE_PERSISTENT] Sem usuários para atualizar.");
+      localStorage.removeItem('autoUpdateCycleState');
+      setAutoUpdateProgress({ current: 0, total: 0, status: 'Concluído (sem usuários)', updatingUser: null, lastRun: new Date().toISOString() });
+      return;
+    }
+    
+    setAutoUpdateProgress(prev => ({ ...prev, current: totalProcessedBefore, total: totalUsers }));
+
+    let processedThisRun = 0;
+    const longestListLength = Math.max(userLists["com.br"].length, userLists["com"].length, userLists["es"].length);
+
+    for (let i = startIndex; i < longestListLength; i++) {
+      const processUser = async (username, hotel) => {
+        if (!username) return;
+
+        setAutoUpdateProgress(prev => ({ ...prev, status: 'Atualizando...', updatingUser: { username, hotel } }));
+        await fetchAndSaveSingleUserForAutoUpdate(username, hotel);
+        processedThisRun++;
+        setAutoUpdateProgress(prev => ({ ...prev, current: totalProcessedBefore + processedThisRun }));
+        
+        // Salva o progresso no localStorage após cada usuário
+        localStorage.setItem('autoUpdateCycleState', JSON.stringify({
+            userLists: userLists,
+            currentIndex: i, // Salva o índice da 'rodada'
+            totalProcessed: totalProcessedBefore + processedThisRun,
+            timestamp: new Date().getTime()
+        }));
+        await new Promise(resolve => setTimeout(resolve, AUTO_UPDATE_USER_DELAY_MS));
+      };
+
+      await processUser(userLists["com.br"][i]?.username, "com.br");
+      await processUser(userLists["com"][i]?.username, "com");
+      await processUser(userLists["es"][i]?.username, "es");
+    }
+
+    console.log("[AUTO_UPDATE_PERSISTENT] Ciclo de atualização concluído.");
+    localStorage.removeItem('autoUpdateCycleState'); // Limpa o estado para o próximo ciclo começar do zero
+    fetchRankingGlobal(true, { bypassThrottle: true });
+    setAutoUpdateProgress(prev => ({ ...prev, status: `Concluído`, updatingUser: null, lastRun: new Date().toISOString() }));
+
+  } catch (error) {
+    console.error("[AUTO_UPDATE_PERSISTENT] Erro no ciclo:", error.message);
+    if (error.message !== "Aba em segundo plano") {
+      setAutoUpdateProgress(prev => ({ ...prev, status: `Erro: ${error.message}`, updatingUser: null, lastRun: new Date().toISOString() }));
+    }
+    // Não limpa o localStorage em caso de erro, para que possa tentar continuar depois
+  } finally {
+    setIsAutoUpdatingList(false);
+    autoUpdateInProgress.current = false;
+  }
+}, [fetchAndSaveSingleUserForAutoUpdate, fetchRankingGlobal]);
 // --- useEffects ---
   useEffect(() => {
     console.log(`[EFFECT_HOTEL_CHANGE] Hotel mudou para: ${hotel}`);
@@ -632,22 +752,32 @@ const App = () => {
     }
   }, [data]);
 
+ // MODIFICADO: useEffect para rodar mesmo com a aba minimizada (com throttling do navegador)
   useEffect(() => {
-    const hotelAtIntervalSetup = hotel;
-    const performUpdate = () => {
-      if (document.hidden) { console.log("[AUTO_UPDATE_INTERVAL] Aba em background, adiando ciclo."); return; }
-      runFullBackgroundUpdate(hotelAtIntervalSetup);
+    let isMounted = true;
+    let timeoutId;
+
+    const loop = async () => {
+      // Roda um ciclo completo de atualização
+      await runFullBackgroundUpdate();
+
+      if (isMounted) {
+        // Agenda o próximo ciclo para recomeçar após um curto intervalo
+        console.log("[AUTO_UPDATE_INTERVAL] Ciclo concluído. Reiniciando em 15 segundos.");
+        timeoutId = setTimeout(loop, 15000); // Aumentei um pouco o delay entre ciclos para ser mais "gentil"
+      }
     };
-    if (autoUpdateIntervalIdRef.current) clearInterval(autoUpdateIntervalIdRef.current);
-    const initialRunTimeoutId = setTimeout(performUpdate, 15000); // Aumentado um pouco o delay inicial
-    autoUpdateIntervalIdRef.current = setInterval(performUpdate, AUTO_UPDATE_CYCLE_INTERVAL_MS);
-    console.log(`[AUTO_UPDATE_INTERVAL] Configurado para ${hotelAtIntervalSetup}. Próximo em ${AUTO_UPDATE_CYCLE_INTERVAL_MS / 60000} min.`);
-    return () => { 
-      clearTimeout(initialRunTimeoutId); 
-      clearInterval(autoUpdateIntervalIdRef.current); 
-      console.log(`[AUTO_UPDATE_INTERVAL] Limpo para ${hotelAtIntervalSetup}.`);
+
+    // Inicia o loop pela primeira vez ao carregar a página
+    console.log("[AUTO_UPDATE_INTERVAL] Iniciando processo de atualização contínua.");
+    timeoutId = setTimeout(loop, 5000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      console.log(`[AUTO_UPDATE_INTERVAL] Ciclo de atualização contínuo interrompido.`);
     };
-  }, [hotel, runFullBackgroundUpdate]);
+  }, [runFullBackgroundUpdate]);
 
   // --- Manipuladores de Eventos ---
   const handlePlayerClick = useCallback(async (player) => {
@@ -726,13 +856,32 @@ const App = () => {
             </button>
           </div>
           
+
+
+          {/* Status da Atualização Automática */}
           {isAutoUpdatingList && (
             <div className="text-center text-xs font-mono p-2 rounded-md my-3" style={{color: "#e6c786", background: "rgba(40,30,15,0.6)", border: "1px solid rgba(128,84,44,0.3)"}}>
               <p>{t.autoUpdateStatus} ({autoUpdateProgress.current}/{autoUpdateProgress.total})</p>
-              <p className="opacity-80">{autoUpdateProgress.status}</p>
+              
+              {/* Lógica para mostrar o usuário atual com bandeira */}
+              {autoUpdateProgress.updatingUser ? (
+                <div className="flex items-center justify-center gap-2 opacity-80" style={{height: '16px'}}>
+                  <span>{autoUpdateProgress.updatingUser.username}</span>
+                  <img 
+                    src={getFlagImgForHotel(autoUpdateProgress.updatingUser.hotel)} 
+                    alt={autoUpdateProgress.updatingUser.hotel}
+                    style={{ height: '16px', width: 'auto', imageRendering: 'pixelated' }}
+                  />
+                </div>
+              ) : (
+                <p className="opacity-80" style={{height: '16px'}}>{autoUpdateProgress.status}</p>
+              )}
+              
               {autoUpdateProgress.lastRun && <p className="text-xs opacity-60 mt-1">Última conclusão: {formatDate(autoUpdateProgress.lastRun)}</p>}
             </div>
           )}
+
+
 
           {error && ( <div className="text-center text-red-300 font-mono font-semibold my-4 p-3 bg-red-900 bg-opacity-50 rounded-md border border-red-700"> {error} </div> )}
           
