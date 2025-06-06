@@ -210,7 +210,7 @@ const Footer = ({ t }) => {
   // AVISO: O link do YouTube que você forneceu parece incorreto. 
   // Um link de canal geralmente se parece com: https://www.youtube.com/channel/SEU_ID_AQUI
   // Estou usando o que você me passou, mas talvez você queira corrigir.
-  const youtubeUrl = "https://www.youtube.com/@Habbo"; // Usei um link de exemplo, substitua pelo seu link correto.
+  const youtubeUrl = "https://youtube.com/@posthabbo?sub_confirmation=1"; // Usei um link de exemplo, substitua pelo seu link correto.
 
   return (
     <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
@@ -227,15 +227,16 @@ const Footer = ({ t }) => {
           </p>
           
           {/* Botão de Inscrição do YouTube */}
-          <a 
-            href={youtubeUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="inline-flex items-center px-4 py-2 rounded-md font-bold text-sm transition-transform transform hover:scale-105" 
-            style={{ background: "#ff0000", color: "#ffffff", fontFamily: "'Press Start 2P', monospace", gap: '8px' }}
-          >
+        <a 
+  href={youtubeUrl} 
+  target="_blank" 
+  rel="noopener noreferrer" 
+  className="inline-flex items-center px-2 py-1 rounded-md font-bold text-xs transition-transform transform hover:scale-105" 
+  style={{ background: "#ff0000", color: "#ffffff", fontFamily: "'Press Start 2P', monospace", gap: '4px' }}
+>
+
             {/* Ícone do YouTube (SVG) */}
-            <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" height="12" width="12" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path>
             </svg>
             {t.footer.subscribeButton}
