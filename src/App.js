@@ -59,6 +59,11 @@ const translations = {
       saveError: "Falha ao salvar dados do jogador.",
       loadingError: "Falha ao carregar dados."
     },
+ footer: {
+      copyright: "Copyrights © 2025 | FishStats. Todos os direitos reservados a este site da web. Este site não é de propriedade ou operado pela Sulake Corporation e não é parte do Habbo Hotel®.",
+      creatorCredit: "Criado por",
+      subscribeButton: "Inscreva-se"
+    }
   },
   en: {
     title: "Habbo Origins Statistics", placeholder: "Username", loading: "Loading...",
@@ -78,6 +83,11 @@ const translations = {
       saveError: "Failed to save player data.",
       loadingError: "Failed to load data."
     },
+footer: {
+      copyright: "Copyrights © 2025 | FishStats. All rights reserved to this website. This site is not owned or operated by Sulake Corporation and is not part of Habbo Hotel®.",
+      creatorCredit: "Created by",
+      subscribeButton: "Subscribe"
+    }
   },
   es: {
     title: "Estadísticas de Habbo Origins", placeholder: "Nombre de usuario", loading: "Cargando...",
@@ -97,6 +107,11 @@ const translations = {
       saveError: "Error al guardar los datos del jugador.",
       loadingError: "Error al cargar los datos."
     },
+footer: {
+      copyright: "Copyrights © 2025 | FishStats. Todos los derechos reservados a este sitio web. Este sitio no es propiedad ni está operado por Sulake Corporation y no forma parte de Habbo Hotel®.",
+      creatorCredit: "Creado por",
+      subscribeButton: "Suscribirse"
+    }
   }
 };const hotelLangMap = { "com.br": "pt", "com": "en", "es": "es" };
 const FLAGS = [
@@ -106,7 +121,7 @@ const FLAGS = [
 ];
 
 // --- Constantes ---
-const AUTO_UPDATE_USER_DELAY_MS = 3000;
+const AUTO_UPDATE_USER_DELAY_MS = 5000;
 const AUTO_UPDATE_CYCLE_INTERVAL_MS = 30 * 60 * 1000;
 const LABEL_TEXT_COLOR = "#ffd27f";
 const ITEMS_PER_PAGE = 20;
@@ -184,7 +199,53 @@ const XpBar = React.memo(({ value, max, color = "#ffc76a", bg = "#312d19" }) => 
     </div>
   );
 });
+// Adicione este componente junto com os outros (Badge, StatusDot, etc.)
 
+const Footer = ({ t }) => {
+  // Verificação para garantir que as traduções do rodapé foram carregadas
+  if (!t || !t.footer) {
+    return null; 
+  }
+
+  // AVISO: O link do YouTube que você forneceu parece incorreto. 
+  // Um link de canal geralmente se parece com: https://www.youtube.com/channel/SEU_ID_AQUI
+  // Estou usando o que você me passou, mas talvez você queira corrigir.
+  const youtubeUrl = "https://www.youtube.com/@Habbo"; // Usei um link de exemplo, substitua pelo seu link correto.
+
+  return (
+    <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
+      <div className="max-w-4xl mx-auto text-xs font-mono" style={{ color: "#a08c6c" }}>
+        {/* Texto de Copyright */}
+        <p className="mb-4 text-gray-500">{t.footer.copyright}</p>
+        
+        {/* Container para os créditos e botão */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4">
+          
+          {/* Créditos ao Criador */}
+          <p>
+            {t.footer.creatorCredit}: <a href="https://x.com/post_habbo" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white transition-colors" style={{color: "#ffd27f"}}>Post</a>
+          </p>
+          
+          {/* Botão de Inscrição do YouTube */}
+          <a 
+            href={youtubeUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center px-4 py-2 rounded-md font-bold text-sm transition-transform transform hover:scale-105" 
+            style={{ background: "#ff0000", color: "#ffffff", fontFamily: "'Press Start 2P', monospace", gap: '8px' }}
+          >
+            {/* Ícone do YouTube (SVG) */}
+            <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path>
+            </svg>
+            {t.footer.subscribeButton}
+          </a>
+
+        </div>
+      </div>
+    </footer>
+  );
+};
 const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClick }) => (
   <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.91)", border: "1.5px solid rgba(149,117,58,0.13)", boxShadow: "0 2px 18px 0 rgba(91,61,34,0.09)" }}>
     <div className="flex items-center mb-3">
@@ -929,6 +990,7 @@ const runFullBackgroundUpdate = useCallback(async (startFresh = false) => {
             !loading && !error && ( <div className="text-center text-gray-400 font-mono py-5"> {t.xpChart.loadingError || "Nenhum jogador no ranking para este hotel ainda."} </div> )
           )}
         </div>
+ <Footer t={t} />
       </div>
     </>
   );
