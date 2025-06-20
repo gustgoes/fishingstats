@@ -22,6 +22,7 @@ const fishingLevelXp = [
   6327356, 6823377, 7356365, 7928932, 8543867, 9204142, 9912930, 10673611,
   11489788, 12365302, 13304246, 14310977
 ];
+
 // --- Funções Auxiliares ---
 const getNextLevelXp = (currentLevel) => fishingLevelXp[(currentLevel || 1) - 1] || 0;
 const capitalize = (str) => (str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "");
@@ -34,11 +35,7 @@ const formatDate = (dateStr) => {
     hour: '2-digit', minute: '2-digit',
   });
 };
-// Bandeira
-const getFlagImgForHotel = (hotelCode) => {
-  const flag = FLAGS.find(f => f.code === hotelCode);
-  return flag ? flag.img : ''; // Retorna o caminho da imagem da bandeira
-};
+
 // --- Dados de Tradução e Flags ---
 const translations = {
   pt: {
@@ -52,6 +49,8 @@ const translations = {
     memberSince: "Membro desde", lastUpdate: "Dados de",
     autoUpdateStatus: "Atualização em segundo plano",
     nextPage: "Próxima", prevPage: "Anterior", page: "Página",
+    growth: "Crescimento", today: "Hoje", thisWeek: "Esta semana", thisMonth: "Este mês",
+    rankingTabs: { geral: "Top Geral", diario: "Top Diário", semanal: "Top Semanal", mensal: "Top Mensal" },
     xpChart: {
       title: "Progressão XP",
       noData: "Sem histórico de XP para exibir.",
@@ -59,7 +58,7 @@ const translations = {
       saveError: "Falha ao salvar dados do jogador.",
       loadingError: "Falha ao carregar dados."
     },
- footer: {
+    footer: {
       copyright: "Copyrights © 2025 | FishStats. Todos os direitos reservados a este site da web. Este site não é de propriedade ou operado pela Sulake Corporation e não é parte do Habbo Hotel®.",
       creatorCredit: "Criado por",
       subscribeButton: "Inscreva-se"
@@ -76,6 +75,8 @@ const translations = {
     memberSince: "Member since", lastUpdate: "Data from",
     autoUpdateStatus: "Background update",
     nextPage: "Next", prevPage: "Previous", page: "Page",
+    growth: "Growth", today: "Today", thisWeek: "This week", thisMonth: "This month",
+    rankingTabs: { geral: "Overall Top", diario: "Daily Top", semanal: "Weekly Top", mensal: "Monthly Top" },
     xpChart: {
       title: "XP Progression",
       noData: "No XP history to display.",
@@ -83,7 +84,7 @@ const translations = {
       saveError: "Failed to save player data.",
       loadingError: "Failed to load data."
     },
-footer: {
+    footer: {
       copyright: "Copyrights © 2025 | FishStats. All rights reserved to this website. This site is not owned or operated by Sulake Corporation and is not part of Habbo Hotel®.",
       creatorCredit: "Created by",
       subscribeButton: "Subscribe"
@@ -100,6 +101,8 @@ footer: {
     memberSince: "Miembro desde", lastUpdate: "Datos de",
     autoUpdateStatus: "Actualización en segundo plano",
     nextPage: "Siguiente", prevPage: "Anterior", page: "Página",
+    growth: "Crecimiento", today: "Hoy", thisWeek: "Esta semana", thisMonth: "Este mes",
+    rankingTabs: { geral: "Top General", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensual" },
     xpChart: {
       title: "Progresión de XP",
       noData: "No hay historial de XP para mostrar.",
@@ -107,188 +110,146 @@ footer: {
       saveError: "Error al guardar los datos del jugador.",
       loadingError: "Error al cargar los datos."
     },
-footer: {
+    footer: {
       copyright: "Copyrights © 2025 | FishStats. Todos los derechos reservados a este sitio web. Este sitio no es propiedad ni está operado por Sulake Corporation y no forma parte de Habbo Hotel®.",
       creatorCredit: "Creado por",
       subscribeButton: "Suscribirse"
     }
   }
-};const hotelLangMap = { "com.br": "pt", "com": "en", "es": "es" };
+};
+const hotelLangMap = { "global": "en", "com.br": "pt", "com": "en", "es": "es" };
 const FLAGS = [
-  { code: "com.br", img: "/img/flags/brpt.png", label: "BR/PT" },
-  { code: "com", img: "/img/flags/eng.png", label: "EN" },
-  { code: "es", img: "/img/flags/es.png", label: "ES" },
+    { code: "global", img: "/img/flags/global.png", label: "GLOBAL" },
+    { code: "com.br", img: "/img/flags/brpt.png", label: "BR/PT" },
+    { code: "com", img: "/img/flags/eng.png", label: "EN" },
+    { code: "es", img: "/img/flags/es.png", label: "ES" },
 ];
+const getFlagImgForHotel = (hotelCode) => FLAGS.find(f => f.code === hotelCode)?.img || '';
 
 // --- Constantes ---
-const AUTO_UPDATE_USER_DELAY_MS = 5000;
-const AUTO_UPDATE_CYCLE_INTERVAL_MS = 30 * 60 * 1000;
 const LABEL_TEXT_COLOR = "#ffd27f";
 const ITEMS_PER_PAGE = 20;
-const RANKING_UPDATE_INTERVAL = 30 * 1000;
 
-// --- Componentes Reutilizáveis (Definidos diretamente no App.js) ---
+// --- Componentes Reutilizáveis ---
 const Badge = React.memo(({ code, name }) => {
-  let srcPath = code;
-  // ... (sua lógica para srcPath como antes)
-  if (code && !/\.(png|gif|jpg|jpeg|webp|svg)$/i.test(code)) {
-    srcPath = `/img/badges/${code}.png`;
-  } else if (code) {
-    srcPath = `/img/badges/${code}`;
-  } else {
-    srcPath = '/img/badges/default_badge.png'; 
-  }
+    let srcPath = code;
+    if (code && !/\.(png|gif|jpg|jpeg|webp|svg)$/i.test(code)) {
+        srcPath = `/img/badges/${code}.png`;
+    } else if (code) {
+        srcPath = `/img/badges/${code}`;
+    } else {
+        srcPath = '/img/badges/default_badge.png';
+    }
+    return (
+        <img src={srcPath} alt={name || 'Emblema'} title={name} className="inline-block mx-1 align-middle"
+            style={{ imageRendering: "pixelated", height: "auto", width: "auto" }}
+            onError={(e) => {
+                if (srcPath.endsWith('.png')) {
+                    const gifPath = srcPath.replace('.png', '.gif');
+                    if (e.target.src !== gifPath) { e.target.src = gifPath; }
+                } else { e.target.src = '/img/badges/default_badge.png'; }
+            }}
+        />
+    );
+});
 
-  return (
-    <img
-      src={srcPath}
-      alt={name || 'Emblema'}
-      title={name}
-      className="inline-block mx-1 align-middle"
-      style={{
-        imageRendering: "pixelated",
-        height: "auto", // Tenta manter a altura original
-        width: "auto",  // Tenta manter a largura original
-        // Tente adicionar um destes para ver o comportamento, mas o ideal é achar a causa da altura de 50px
-        // objectFit: "contain", // Garante que toda a imagem caiba, mantendo a proporção, dentro das dimensões do elemento
-        // objectPosition: "center", 
-      }}
-      onError={(e) => {
-        console.error(`Erro ao carregar emblema: ${srcPath}. Tentando fallback para .gif se era .png...`);
-        // Tentativa de fallback simples: se falhou com .png (e não era um gif explícito), tenta .gif
-        // Esta é uma heurística e pode não ser ideal, pode causar um request extra.
-        if (srcPath.endsWith('.png')) {
-          const gifPath = srcPath.replace('.png', '.gif');
-          // Para evitar loop de erro se o .gif também não existir
-          if (e.target.src !== gifPath) { 
-            e.target.src = gifPath;
-            e.target.onerror = () => { // Se o .gif também falhar
-                console.error(`Erro ao carregar emblema (fallback .gif): ${gifPath}`);
-                e.target.src = '/img/badges/default_badge.png'; // Imagem de erro final
-            };
-          }
-        } else if (!srcPath.includes('.')) { // Se não tinha extensão e tentou .png implicitamente
-             const gifPath = `/img/badges/${code}.gif`;
-             if (e.target.src !== gifPath) {
-                e.target.src = gifPath;
-                e.target.onerror = () => {
-                    console.error(`Erro ao carregar emblema (fallback .gif para código sem extensão): ${gifPath}`);
-                    e.target.src = '/img/badges/default_badge.png';
-                };
-             }
-        } else {
-            // Se já era .gif ou outra extensão e falhou, ou se o fallback de .gif falhou
-             e.target.src = '/img/badges/default_badge.png';
-        }
-      }}
-    />
-  );
-});const StatusDot = React.memo(({ online }) => ( <span title={online ? "Online" : "Offline"} className="inline-block align-middle mr-1" style={{ width: 10, height: 10, borderRadius: "50%", background: online ? "#b6f0ae" : "#e67e47", border: "1.5px solid #80682b" }} ></span> ));
+const StatusDot = React.memo(({ online }) => ( <span title={online ? "Online" : "Offline"} className="inline-block align-middle mr-1" style={{ width: 10, height: 10, borderRadius: "50%", background: online ? "#b6f0ae" : "#e67e47", border: "1.5px solid #80682b" }} ></span> ));
 
 const XpBar = React.memo(({ value, max, color = "#ffc76a", bg = "#312d19" }) => {
-  const percent = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  const showText = typeof value === 'number' && typeof max === 'number' && max > 0;
-  return (
-    <div style={{ background: bg, borderRadius: 12, height: 14, width: "100%", margin: "4px 0", boxShadow: "0 1px 4px #0004 inset,0 1px 0 #fff2", position: 'relative' }}>
-      <div style={{ width: `${percent}%`, height: "100%", background: `linear-gradient(90deg, ${color} 70%, #ffe6a0 100%)`, borderRadius: 11, boxShadow: percent ? "0 1px 5px #f7c76655 inset,0 0px 1.5px #fff5" : undefined, transition: "width 0.35s cubic-bezier(.9,.1,.2,1)" }} />
-      {showText && (
-        <div style={{ position: 'absolute', top: '0px', left: '0px', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#20180f', fontWeight: 'bold', lineHeight: '14px', fontFamily: "'Press Start 2P', monospace", textShadow: '0px 0px 2px rgba(255,255,255,0.5)' }}>
-          {(value || 0).toLocaleString('pt-BR')}/{(max || 0).toLocaleString('pt-BR')}
+    const percent = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+    const showText = typeof value === 'number' && typeof max === 'number' && max > 0;
+    return (
+        <div style={{ background: bg, borderRadius: 12, height: 14, width: "100%", margin: "4px 0", boxShadow: "0 1px 4px #0004 inset,0 1px 0 #fff2", position: 'relative' }}>
+            <div style={{ width: `${percent}%`, height: "100%", background: `linear-gradient(90deg, ${color} 70%, #ffe6a0 100%)`, borderRadius: 11, boxShadow: percent ? "0 1px 5px #f7c76655 inset,0 0px 1.5px #fff5" : undefined, transition: "width 0.35s cubic-bezier(.9,.1,.2,1)" }} />
+            {showText && (
+                <div style={{ position: 'absolute', top: '0px', left: '0px', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#20180f', fontWeight: 'bold', lineHeight: '14px', fontFamily: "'Press Start 2P', monospace", textShadow: '0px 0px 2px rgba(255,255,255,0.5)' }}>
+                    {(value || 0).toLocaleString('pt-BR')}/{(max || 0).toLocaleString('pt-BR')}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 });
-// Adicione este componente junto com os outros (Badge, StatusDot, etc.)
 
 const Footer = ({ t }) => {
-  // Verificação para garantir que as traduções do rodapé foram carregadas
-  if (!t || !t.footer) {
-    return null; 
-  }
-
-  // AVISO: O link do YouTube que você forneceu parece incorreto. 
-  // Um link de canal geralmente se parece com: https://www.youtube.com/channel/SEU_ID_AQUI
-  // Estou usando o que você me passou, mas talvez você queira corrigir.
-  const youtubeUrl = "https://youtube.com/@posthabbo?sub_confirmation=1"; // Usei um link de exemplo, substitua pelo seu link correto.
-
-  return (
-    <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
-      <div className="max-w-4xl mx-auto text-xs font-mono" style={{ color: "#a08c6c" }}>
-        {/* Texto de Copyright */}
-        <p className="mb-4 text-gray-500">{t.footer.copyright}</p>
-        
-        {/* Container para os créditos e botão */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4">
-          
-          {/* Créditos ao Criador */}
-          <p>
-            {t.footer.creatorCredit}: <a href="https://x.com/post_habbo" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white transition-colors" style={{color: "#ffd27f"}}>Post</a>
-          </p>
-          
-          {/* Botão de Inscrição do YouTube */}
-        <a 
-  href={youtubeUrl} 
-  target="_blank" 
-  rel="noopener noreferrer" 
-  className="inline-flex items-center px-2 py-1 rounded-md font-bold text-xs transition-transform transform hover:scale-105" 
-  style={{ background: "#ff0000", color: "#ffffff", fontFamily: "'Press Start 2P', monospace", gap: '4px' }}
->
-
-            {/* Ícone do YouTube (SVG) */}
-            <svg xmlns="http://www.w3.org/2000/svg" height="12" width="12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path>
-            </svg>
-            {t.footer.subscribeButton}
-          </a>
-
-        </div>
-      </div>
-    </footer>
-  );
+    if (!t || !t.footer) return null;
+    const youtubeUrl = "https://www.youtube.com/@HabboPost"; // Link corrigido
+    return (
+        <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
+            <div className="max-w-4xl mx-auto text-xs font-mono" style={{ color: "#a08c6c" }}>
+                <p className="mb-4 text-gray-500">{t.footer.copyright}</p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4">
+                    <p>{t.footer.creatorCredit}: <a href="https://x.com/post_habbo" target="_blank" rel="noopener noreferrer" className="font-bold hover:text-white transition-colors" style={{ color: "#ffd27f" }}>Post</a></p>
+                    <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2 py-1 rounded-md font-bold text-xs transition-transform transform hover:scale-105" style={{ background: "#ff0000", color: "#ffffff", fontFamily: "'Press Start 2P', monospace", gap: '4px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="12" width="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path></svg>
+                        {t.footer.subscribeButton}
+                    </a>
+                </div>
+            </div>
+        </footer>
+    );
 };
-const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClick }) => (
-  <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.91)", border: "1.5px solid rgba(149,117,58,0.13)", boxShadow: "0 2px 18px 0 rgba(91,61,34,0.09)" }}>
-    <div className="flex items-center mb-3">
-      <h2 className="text-lg font-semibold flex-1 font-mono" style={{ color: "#ffeac2" }}> 🎣 {t.level}: {player.level} </h2>
+
+const GrowthStats = React.memo(({ gains, t }) => {
+    if (!gains || (gains.today <= 0 && gains.week <= 0 && gains.month <= 0)) {
+        return null;
+    }
+    return (
+        <div className="mt-2 text-sm" style={{ color: "#ffeac2" }}>
+            <strong style={{ color: LABEL_TEXT_COLOR }}>{t.growth}:</strong>
+            {gains.today > 0 && <p className="text-xs ml-2" style={{ color: "#b6f0ae" }}>{t.today}: +{gains.today.toLocaleString('pt-BR')} XP</p>}
+            {gains.week > 0 && <p className="text-xs ml-2" style={{ color: "#b6f0ae" }}>{t.thisWeek}: +{gains.week.toLocaleString('pt-BR')} XP</p>}
+            {gains.month > 0 && <p className="text-xs ml-2" style={{ color: "#b6f0ae" }}>{t.thisMonth}: +{gains.month.toLocaleString('pt-BR')} XP</p>}
+        </div>
+    );
+});
+
+const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClick, playerGains }) => (
+    <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.91)", border: "1.5px solid rgba(149,117,58,0.13)", boxShadow: "0 2px 18px 0 rgba(91,61,34,0.09)" }}>
+        <div className="flex items-center mb-3">
+            <h2 className="text-lg font-semibold flex-1 font-mono" style={{ color: "#ffeac2" }}> 🎣 {t.level}: {player.level} </h2>
+        </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center">
+            <img src={player.avatarUrl} alt="Avatar" style={{ width: 112, height: 196, imageRendering: "pixelated", background: "#332216", borderRadius: 10 }} className="mb-3 sm:mb-0 sm:mr-4 border-2 border-[#a07852] cursor-pointer object-cover flex-shrink-0" onClick={() => handlePlayerClick(player)} />
+            <div className="flex-1">
+                <p className="text-lg font-semibold flex items-center font-mono" style={{ color: "#ffebc7" }}>
+                    <StatusDot online={player.online} /> {capitalize(player.username)}
+                    {dataIndexInRanking !== -1 && ( <span className="ml-2 text-xs" style={{ color: "#f7e7d2" }}> ({t.rank}: {dataIndexInRanking + 1}) </span> )}
+                </p>
+                <p className="text-sm mt-1" style={{ color: "#ffeac2" }}> <strong style={{color: LABEL_TEXT_COLOR}}>{t.level}:</strong> {player.level} | <strong style={{color: LABEL_TEXT_COLOR}}>{t.xp}:</strong> {(player.experience || 0).toLocaleString('pt-BR')} </p>
+                <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
+                <p className="text-sm flex items-center mt-1" style={{ color: player.online ? "#b6f0ae" : "#f3bfa1" }}> {player.online ? t.online : t.offline} </p>
+                {player.membersince && ( <p className="text-xs mt-1"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.memberSince}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(player.membersince)}</span> </p> )}
+                {player.lastaccesstime && ( <p className="text-xs"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastAccess}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(player.lastaccesstime)}</span> </p> )}
+                {player.updatedat && ( <p className="text-xs"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastUpdate.replace("em", "")}:</strong> <span style={{ color: "#e3d099" }}>{formatDate(player.updatedat)}</span> </p> )}
+                 <GrowthStats gains={playerGains} t={t} />
+            </div>
+        </div>
+        <div className="mt-3"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.mission}:</strong> <span style={{ color: "#ffeac2" }}>{' '}{player.mission || "-"}</span> </div>
+        <div className="mt-2">
+            <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
+            {player.badges && player.badges.length > 0 ? (
+                <div className="flex flex-wrap gap-1 mt-1 items-center"> {player.badges.map((badge, idx) => <Badge key={badge.code || `badge-${idx}`} code={badge.code} name={badge.name} />)} </div>
+            ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
+        </div>
     </div>
-    <div className="flex flex-col sm:flex-row items-start sm:items-center">
-      <img src={player.avatarUrl} alt="Avatar" style={{ width: 112, height: 196, imageRendering: "pixelated", background: "#332216", borderRadius: 10 }} className="mb-3 sm:mb-0 sm:mr-4 border-2 border-[#a07852] cursor-pointer object-cover flex-shrink-0" onClick={() => handlePlayerClick(player)} />
-      <div className="flex-1">
-        <p className="text-lg font-semibold flex items-center font-mono" style={{ color: "#ffebc7" }}>
-          <StatusDot online={player.online} /> {capitalize(player.username)}
-          {dataIndexInRanking !== -1 && ( <span className="ml-2 text-xs" style={{ color: "#f7e7d2" }}> ({t.rank}: {dataIndexInRanking + 1}) </span> )}
-        </p>
-        <p className="text-sm mt-1" style={{ color: "#ffeac2" }}> <strong style={{color: LABEL_TEXT_COLOR}}>{t.level}:</strong> {player.level} | <strong style={{color: LABEL_TEXT_COLOR}}>{t.xp}:</strong> {(player.experience || 0).toLocaleString('pt-BR')} </p>
-        <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
-        <p className="text-sm flex items-center mt-1" style={{ color: player.online ? "#b6f0ae" : "#f3bfa1" }}> {player.online ? t.online : t.offline} </p>
-        {player.membersince && ( <p className="text-xs mt-1"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.memberSince}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(player.membersince)}</span> </p> )}
-        {player.lastaccesstime && ( <p className="text-xs"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastAccess}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(player.lastaccesstime)}</span> </p> )}
-        {player.updatedat && ( <p className="text-xs"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastUpdate.replace("em", "")}:</strong> <span style={{ color: "#e3d099" }}>{formatDate(player.updatedat)}</span> </p> )}
-      </div>
-    </div>
-    <div className="mt-3"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.mission}:</strong> <span style={{ color: "#ffeac2" }}>{' '}{player.mission || "-"}</span> </div>
-    <div className="mt-2">
-      <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
-      {player.badges && player.badges.length > 0 ? (
-   <div className="flex flex-wrap gap-1 mt-1 items-center">  {player.badges.map((badge, idx) => <Badge key={badge.code || `badge-${idx}`} code={badge.code} name={badge.name} />)} </div>
-      ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
-    </div>
-  </div>
 ));
 
-const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedPlayer, expandedProfile, expandedPlayerXpHistory, loadingExpandedChart }) => {
-  const isExpanded = expandedPlayer && expandedPlayer.username === player.username && expandedPlayer.hotel === player.hotel;
-  return (
+const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedPlayer, expandedProfile, expandedPlayerXpHistory, loadingExpandedChart, currentHotel }) => {
+    const isExpanded = expandedPlayer && expandedPlayer.username === player.username && expandedPlayer.hotel === player.hotel;
+    
+    return (
     <div className="rounded-md shadow-lg flex flex-col relative" style={{ background: "rgba(37,28,18,0.93)", border: "1.5px solid rgba(128,84,44,0.2)", padding: '10px' }}>
-      {/* Conteúdo normal do RankingItem */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center flex-grow min-w-0">
           <span className="text-lg font-bold mr-2 font-mono flex-shrink-0" style={{ color: "#ffde99", minWidth: '2.5ch' }}>{index + 1}.</span>
           <img src={player.avatarUrl} alt="Avatar" style={{ width: 62, height: 110, imageRendering: "pixelated", background: "#31241d", borderRadius: 5 }} className="cursor-pointer border border-[#7b6a56] object-cover flex-shrink-0 shadow-sm" onClick={() => handlePlayerClick(player)} />
           <div className="ml-2 flex-grow min-w-0">
             <p className="text-sm font-semibold flex items-center font-mono truncate" style={{ color: "#ffd27f" }} title={capitalize(player.username)}>
-              <StatusDot online={player.online} /> {capitalize(player.username)}
+              <StatusDot online={player.online} />
+                {currentHotel === 'global' && (
+                    <img src={getFlagImgForHotel(player.hotel)} alt={player.hotel} className="w-4 h-auto mr-1.5" style={{imageRendering: 'pixelated'}} />
+                )}
+              {capitalize(player.username)}
             </p>
             {player.mission && ( <p className="text-xs font-mono truncate mt-0.5" style={{ color: "#b0a080" }} title={player.mission}> "{player.mission}" </p> )}
           </div>
@@ -296,705 +257,510 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
         <span className="text-xs font-mono font-bold flex-shrink-0 ml-2 p-1 px-1.5 rounded" style={{ color: "#2a2215", backgroundColor: "#ffc76a" }}>Lvl {player.level}</span>
       </div>
       <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
+      
+       <GrowthStats gains={player.gains} t={t} />
+
       <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 font-mono text-xs items-center justify-between">
         {player.badges && player.badges.length > 0 && (
-
-           <div className="flex flex-wrap gap-1 mt-1 items-center"> 
-            {player.badges.slice(0, 2).map((badge, idx) => ( <Badge key={badge.code || `sbadge-${idx}`} code={badge.code} name={badge.name} /> ))}
-            {player.badges.length > 2 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 2})</span>}
-          </div>
+            <div className="flex flex-wrap gap-1 mt-1 items-center">
+             {player.badges.slice(0, 5).map((badge, idx) => ( <Badge key={badge.code || `sbadge-${idx}`} code={badge.code} name={badge.name} /> ))}
+             {player.badges.length > 5 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 5})</span>}
+           </div>
         )}
         {player.updatedat && ( <span className="text-xs opacity-60 whitespace-nowrap" style={{ color: "#b3a079" }}> {formatDate(player.updatedat)} </span> )}
       </div>
 
-      {/* Conteúdo Expandido do RankingItem */}
       {isExpanded && (
-        <div 
-            className="absolute top-0 left-0 w-full p-3 rounded-md z-20 flex flex-col shadow-2xl overflow-y-auto" 
-            style={{ background: "rgba(28,22,14,0.98)", border: "2px solid #c09b57", maxHeight: "calc(100vh - 100px)", minHeight:"450px" /* Aumentado para caber o gráfico */ }} 
-            onClick={(e) => e.stopPropagation()} 
+        <div className="absolute top-0 left-0 w-full p-3 rounded-md z-20 flex flex-col shadow-2xl overflow-y-auto"
+            style={{ background: "rgb(28, 22, 14)", border: "2px solid #c09b57", maxHeight: "calc(100vh - 100px)", minHeight:"450px" }}
+            onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start mb-2">
-            <img src={player.avatarUrl} alt="Avatar" style={{ width: 70, height: 123, imageRendering: "pixelated", background: "#332216", borderRadius: 8 }} className="mr-3 border-2 border-[#a07852] object-cover flex-shrink-0" />
-            <div className="flex-1">
-              <p className="font-bold text-md flex items-center font-mono" style={{ color: "#ffeac2" }}> <StatusDot online={expandedProfile?.online ?? player.online} /> {capitalize(player.username)} </p>
-              <p className="text-xs ml-1" style={{ color: (expandedProfile?.online ?? player.online) ? "#b6f0ae" : "#f3bfa1" }}> {(expandedProfile?.online ?? player.online) ? t.online : t.offline} </p>
-            </div>
-            <button onClick={() => handlePlayerClick(player)} className="text-2xl font-mono text-amber-400 hover:text-amber-200 transition-colors flex-shrink-0">&times;</button>
-          </div>
-          <div className="text-xs space-y-1 font-mono mb-2">
-            {expandedProfile?.membersince && ( <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.memberSince}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(expandedProfile.membersince)}</span></p> )}
-            {expandedProfile?.lastaccesstime && ( <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastAccess}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(expandedProfile.lastaccesstime)}</span></p> )}
-            <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastUpdate.replace("em","")}:</strong> <span style={{ color: "#e3d099" }}>{formatDate(player.updatedat)}</span></p>
-          </div>
-          <hr className="border-yellow-700/20 my-1.5"/>
-          <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.level}:</strong> <span style={{ color: "#ffeac2" }}>{player.level}</span></p>
-          <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.xp}:</strong> <span style={{ color: "#ffeac2" }}>{(player.experience || 0).toLocaleString('pt-BR')} / {(getNextLevelXp(player.level) || 0).toLocaleString('pt-BR')}</span></p>
-          <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
-          <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.fishCaught}:</strong> <span style={{ color: "#ffeac2" }}>{player.fishCaught ?? "-"}</span></p>
-          <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.goldFishCaught}:</strong> <span style={{ color: "#ffeac2" }}>{player.goldFishCaught ?? "-"}</span></p>
-          {player.rod && (
-            <div className="mt-1.5">
-              <strong style={{ color: LABEL_TEXT_COLOR }}>{t.fishingRod}:</strong>
-              <span style={{ color: "#ffeac2" }}> {t.level} {player.rod.level} </span><br />
-              <span className="font-mono text-xs" style={{ color: "#ffeac2" }}> {t.rodXp}: {(player.rod.experience || 0).toLocaleString('pt-BR')} / {(player.rod.nextLevelExperience || 0).toLocaleString('pt-BR')} </span>
-              <XpBar value={player.rod.experience} max={player.rod.nextLevelExperience} color="#a1e896" bg="#214218" />
-            </div>
-          )}
-          <div className="mt-1.5"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.mission}:</strong> <span style={{ color: "#ffeac2" }}>{' '}{player.mission || "-"}</span> </div>
-          <div className="mt-1.5">
-            <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
-            {player.badges && player.badges.length > 0 ? (
-               <div className="flex flex-wrap gap-1 mt-1 items-center"> 
- {player.badges.map((badge, idx) => <Badge key={badge.code || `expbadge-${idx}`} code={badge.code} name={badge.name} />)} </div>
-            ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
-          </div>
-          <hr className="border-yellow-700/20 my-2.5"/>
-          <div className="mt-2" style={{minHeight: "160px"}}>
-            <DailyXpProgressChart
-              data={expandedPlayerXpHistory}
-              t={t}
-              isLoading={loadingExpandedChart}
-              chartHeight={150} 
-            />
-          </div>
+          {/* O restante do conteúdo expandido permanece o mesmo */}
+           <div className="flex items-start mb-2">
+             <img src={player.avatarUrl} alt="Avatar" style={{ width: 70, height: 123, imageRendering: "pixelated", background: "#332216", borderRadius: 8 }} className="mr-3 border-2 border-[#a07852] object-cover flex-shrink-0" />
+             <div className="flex-1">
+               <p className="font-bold text-md flex items-center font-mono" style={{ color: "#ffeac2" }}> <StatusDot online={expandedProfile?.online ?? player.online} /> {capitalize(player.username)} </p>
+               <p className="text-xs ml-1" style={{ color: (expandedProfile?.online ?? player.online) ? "#b6f0ae" : "#f3bfa1" }}> {(expandedProfile?.online ?? player.online) ? t.online : t.offline} </p>
+             </div>
+             <button onClick={() => handlePlayerClick(player)} className="text-2xl font-mono text-amber-400 hover:text-amber-200 transition-colors flex-shrink-0">×</button>
+           </div>
+           <div className="text-xs space-y-1 font-mono mb-2">
+             {expandedProfile?.membersince && ( <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.memberSince}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(expandedProfile.membersince)}</span></p> )}
+             {expandedProfile?.lastaccesstime && ( <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastAccess}:</strong> <span style={{ color: "#ccb991" }}>{formatDate(expandedProfile.lastaccesstime)}</span></p> )}
+             <p><strong style={{ color: LABEL_TEXT_COLOR }}>{t.lastUpdate.replace("em","")}:</strong> <span style={{ color: "#e3d099" }}>{formatDate(player.updatedat)}</span></p>
+           </div>
+           <hr className="border-yellow-700/20 my-1.5"/>
+           <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.level}:</strong> <span style={{ color: "#ffeac2" }}>{player.level}</span></p>
+           <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.xp}:</strong> <span style={{ color: "#ffeac2" }}>{(player.experience || 0).toLocaleString('pt-BR')} / {(getNextLevelXp(player.level) || 0).toLocaleString('pt-BR')}</span></p>
+           <XpBar value={player.experience} max={getNextLevelXp(player.level)} />
+            <GrowthStats gains={player.gains} t={t} />
+           <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.fishCaught}:</strong> <span style={{ color: "#ffeac2" }}>{player.fishCaught ?? "-"}</span></p>
+           <p className="text-sm"><strong style={{ color: LABEL_TEXT_COLOR }}>{t.goldFishCaught}:</strong> <span style={{ color: "#ffeac2" }}>{player.goldFishCaught ?? "-"}</span></p>
+           {player.rod && (
+             <div className="mt-1.5">
+               <strong style={{ color: LABEL_TEXT_COLOR }}>{t.fishingRod}:</strong>
+               <span style={{ color: "#ffeac2" }}> {t.level} {player.rod.level} </span><br />
+               <span className="font-mono text-xs" style={{ color: "#ffeac2" }}> {t.rodXp}: {(player.rod.experience || 0).toLocaleString('pt-BR')} / {(player.rod.nextLevelExperience || 0).toLocaleString('pt-BR')} </span>
+               <XpBar value={player.rod.experience} max={player.rod.nextLevelExperience} color="#a1e896" bg="#214218" />
+             </div>
+           )}
+           <div className="mt-1.5"> <strong style={{ color: LABEL_TEXT_COLOR }}>{t.mission}:</strong> <span style={{ color: "#ffeac2" }}>{' '}{player.mission || "-"}</span> </div>
+           <div className="mt-1.5">
+             <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
+             {player.badges && player.badges.length > 0 ? (
+                <div className="flex flex-wrap gap-1 mt-1 items-center">
+                    {player.badges.map((badge, idx) => <Badge key={badge.code || `expbadge-${idx}`} code={badge.code} name={badge.name} />)}
+                </div>
+             ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
+           </div>
+           <hr className="border-yellow-700/20 my-2.5"/>
+           <div className="mt-2" style={{minHeight: "160px"}}>
+             <DailyXpProgressChart data={expandedPlayerXpHistory} t={t} isLoading={loadingExpandedChart} chartHeight={150} />
+           </div>
         </div>
       )}
     </div>
   );
 });
+
+
 // --- Componente Principal App ---
 const App = () => {
-  // --- Estados ---
-  const [username, setUsername] = useState("");
-  const [hotel, setHotel] = useState("com.br");
-  const [lang, setLang] = useState("pt");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [ranking, setRanking] = useState([]);
-  const [expandedPlayer, setExpandedPlayer] = useState(null);
-  const [expandedProfile, setExpandedProfile] = useState(null);
-  const [data, setData] = useState(null);
-  const [isAutoUpdatingList, setIsAutoUpdatingList] = useState(false);
-  const [autoUpdateProgress, setAutoUpdateProgress] = useState({ 
-  current: 0, 
-  total: 0, 
-  status: 'inativo', 
-  updatingUser: null, // Guardará { username, hotel }
-  lastRun: null 
-});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [dailyXpHistory, setDailyXpHistory] = useState([]);
-  const [loadingChart, setLoadingChart] = useState(false);
-  const [expandedPlayerXpHistory, setExpandedPlayerXpHistory] = useState([]);
-  const [loadingExpandedChart, setLoadingExpandedChart] = useState(false);
+    const [username, setUsername] = useState("");
+    const [hotel, setHotel] = useState("global");
+    const [lang, setLang] = useState("pt");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [ranking, setRanking] = useState([]);
+    const [expandedPlayer, setExpandedPlayer] = useState(null);
+    const [expandedProfile, setExpandedProfile] = useState(null);
+    const [data, setData] = useState(null);
+    const [playerGains, setPlayerGains] = useState(null);
+    const [rankingPeriod, setRankingPeriod] = useState('geral');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [dailyXpHistory, setDailyXpHistory] = useState([]);
+    const [loadingChart, setLoadingChart] = useState(false);
+    const [expandedPlayerXpHistory, setExpandedPlayerXpHistory] = useState([]);
+    const [loadingExpandedChart, setLoadingExpandedChart] = useState(false);
 
-  // --- Refs ---
-  const profileCache = useRef({});
-  const lastRankingFetch = useRef(0);
-  const autoUpdateInProgress = useRef(false);
-  const autoUpdateIntervalIdRef = useRef(null);
-
-  // --- Traduções (instância) ---
-  const t = translations[lang] || translations["pt"];
-
-  // --- Funções de Busca e Manipulação de Dados ---
-  const fetchRankingGlobal = useCallback(async (force = false, options) => {
-    const now = Date.now();
-    const shouldSetLoading = options?.setLoadingState ?? false;
-    if (!force && (now - lastRankingFetch.current < RANKING_UPDATE_INTERVAL) && !options?.bypassThrottle) {
-      return;
-    }
-    if (shouldSetLoading) setLoading(true);
-    try {
-      const { data: rankingData, error: rankingError } = await supabase.from('ranking').select('*').eq('hotel', hotel).order('level', { ascending: false }).order('experience', { ascending: false });
-      if (rankingError) throw rankingError;
-      setRanking((rankingData || []).filter(p => p && p.username));
-      if (force || shouldSetLoading) setCurrentPage(1);
-    } catch (err) {
-      console.error("[DEBUG] Error in fetchRankingGlobal:", err.message);
-      if (shouldSetLoading) setError(t.xpChart.loadingError || "Falha ao carregar ranking.");
-    } finally {
-      lastRankingFetch.current = now;
-      if (shouldSetLoading) setLoading(false);
-    }
-  }, [hotel, t]);
-
-  const getDailyXpLogsFromSupabase = useCallback(async (playerName, playerHotel) => {
-    if (!playerName || !playerHotel) {
-      console.warn("getDailyXpLogsFromSupabase chamado sem playerName ou playerHotel");
-      return { data: [], error: new Error("Nome do jogador ou hotel não fornecido.") };
-    }
-    console.log(`[XP_LOGS] Buscando histórico para ${playerName}@${playerHotel}`);
-    try {
-      const { data: xpLogs, error: fetchError } = await supabase
-        .from('xp_history') // ❗ CONFIRME O NOME DA TABELA ❗
-        .select('logged_at, experience, level')
-        .eq('username', playerName.toLowerCase())
-        .eq('hotel', playerHotel)
-        .order('logged_at', { ascending: true })
-        .limit(200);
-
-      if (fetchError) {
-        console.error("[XP_LOGS] Erro do Supabase ao buscar histórico:", fetchError);
-        throw fetchError;
-      }
-      
-      console.log(`[XP_LOGS] Logs crus para ${playerName}:`, xpLogs);
-      if (!xpLogs) return { data: [], error: null };
-
-      const formattedData = xpLogs.map(log => {
-        const dateObj = new Date(log.logged_at);
-        return {
-          timestamp: dateObj.getTime(),
-          experience: log.experience,
-          level: log.level,
-          tooltipLabel: dateObj.toLocaleString('pt-BR', {
-            day: '2-digit', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo'
-          })
-        };
-      });
-      console.log(`[XP_LOGS] Dados formatados para ${playerName}:`, formattedData);
-      return { data: formattedData, error: null };
-    } catch (err) {
-      console.error("[XP_LOGS] Exceção em getDailyXpLogsFromSupabase:", err.message);
-      return { data: [], error: err };
-    }
-  }, []); // supabase é estável
-
-  const savePlayerGlobal = useCallback(async (player) => {
-    console.log("[SAVE_PLAYER] Tentando salvar jogador:", player.username);
-    try {
-      const playerToSave = { ...player, updatedat: new Date().toISOString() }; // Garante updatedat fresco
-      const { error: saveError } = await supabase.from('ranking').upsert([playerToSave], { onConflict: ['username', 'hotel'] });
-      
-      if (saveError) {
-        console.error("[SAVE_PLAYER] Erro ao salvar na tabela ranking:", saveError);
-        throw saveError;
-      }
-      console.log("[SAVE_PLAYER] Salvo no ranking com sucesso:", player.username);
-
-      if (player.username && player.hotel && typeof player.experience === 'number') {
-        console.log(`[XP_HISTORY_SAVE] Preparando para salvar histórico para ${player.username}, XP: ${player.experience}`);
-        const { error: logInsertError } = await supabase
-          .from('xp_history') // ❗ CONFIRME O NOME DA TABELA ❗
-          .insert({
-            username: player.username.toLowerCase(),
-            hotel: player.hotel,
-            level: player.level, 
-            experience: player.experience,
-            logged_at: new Date().toISOString()
-          });
-
-        if (logInsertError) {
-          console.error("!!! ERRO AO INSERIR NO HISTÓRICO DE XP (xp_history) !!!:", logInsertError);
-          // alert(`ERRO ao salvar no histórico de XP: ${logInsertError.message}. Detalhes no console.`);
-        } else {
-          console.log(`[XP_HISTORY_SAVE] Histórico de XP salvo para ${player.username} - XP: ${player.experience}`);
-        }
-      } else {
-        console.warn("[XP_HISTORY_SAVE] Condição para salvar histórico não atendida:", player);
-      }
-      return true;
-    } catch (err) {
-      console.error("[SAVE_PLAYER] Exceção em savePlayerGlobal:", err.message, err);
-      return false;
-    }
-  }, []); // supabase é estável
-
-  const fetchStats = useCallback(async () => {
-    if (!username.trim()) {
-      setError(t.placeholder);
-      return;
-    }
-    setLoading(true); setError(""); setData(null);
-    setDailyXpHistory([]); // Limpa gráfico principal
-
-    try {
-      const usernameKey = username.trim().toLowerCase();
-      console.log(`[FETCH_STATS] Iniciando para: ${usernameKey}@${hotel}`);
-
-      const userRes = await fetch(`https://origins.habbo.${hotel}/api/public/users?name=${usernameKey}`);
-      if (!userRes.ok) { if (userRes.status === 404) throw new Error(t.userNotFound); throw new Error(`API User Error: ${userRes.status}`); }
-      const userData = await userRes.json();
-      console.log("[FETCH_STATS] userData da API:", userData);
-      const uniqueId = userData.uniqueId;
-      if (!uniqueId) throw new Error("ID de usuário inválido.");
-      
-      const fishingRes = await fetch(`https://origins.habbo.${hotel}/api/public/skills/${uniqueId}?skillType=FISHING`);
-      if (!fishingRes.ok) { if (fishingRes.status === 404) throw new Error(t.skillsMissing); throw new Error(`API Fishing Error: ${fishingRes.status}`); }
-      const fishingData = await fishingRes.json();
-      console.log("[FETCH_STATS] fishingData da API:", fishingData);
-      if (!fishingData || typeof fishingData.level === "undefined") throw new Error(t.skillsMissing);
-      
-      let profile = null;
-      try {
-        const profileRes = await fetch(`https://origins.habbo.${hotel}/api/public/users/${uniqueId}/profile`);
-        if (profileRes.ok) profile = await profileRes.json();
-        console.log("[FETCH_STATS] profileData da API:", profile);
-      } catch (profileError) { console.warn("[FETCH_STATS] Erro ao buscar perfil:", profileError.message); }
-
-      // Lógica de Acumulação de Emblemas
-      const newApiBadges = Array.isArray(userData.selectedBadges) 
-        ? userData.selectedBadges.map(b => ({ code: b.code, name: b.name, description: b.description })) 
-        : [];
-      console.log("[BADGES] Emblemas da API (fetchStats):", JSON.parse(JSON.stringify(newApiBadges)));
-
-      let combinedBadges = [...newApiBadges];
-      try {
-        const { data: existingPlayerData, error: fetchExistingDbError } = await supabase
-          .from('ranking')
-          .select('badges')
-          .eq('username', usernameKey)
-          .eq('hotel', hotel)
-          .single();
-
-        if (fetchExistingDbError && fetchExistingDbError.code !== 'PGRST116') {
-          console.warn(`[BADGES] Erro ao buscar emblemas existentes do DB para ${usernameKey} (fetchStats):`, fetchExistingDbError);
-        } else if (existingPlayerData && Array.isArray(existingPlayerData.badges)) {
-          const existingDbBadges = existingPlayerData.badges;
-          console.log("[BADGES] Emblemas existentes no DB (fetchStats):", JSON.parse(JSON.stringify(existingDbBadges)));
-          const currentApiBadgeCodes = new Set(newApiBadges.map(b => b.code));
-          existingDbBadges.forEach(dbBadge => {
-            if (dbBadge && dbBadge.code && !currentApiBadgeCodes.has(dbBadge.code)) {
-              combinedBadges.push(dbBadge);
-            }
-          });
-        }
-      } catch (dbError) {
-        if (dbError.code !== 'PGRST116') console.warn("[BADGES] Exceção ao buscar emblemas do DB (fetchStats):", dbError);
-      }
-      const uniqueBadgeCodes = new Set();
-      const finalUniqueBadges = [];
-      for (const badge of combinedBadges) {
-        if (badge && badge.code && !uniqueBadgeCodes.has(badge.code)) {
-          finalUniqueBadges.push(badge);
-          uniqueBadgeCodes.add(badge.code);
-        }
-      }
-      combinedBadges = finalUniqueBadges;
-      console.log("[BADGES] Emblemas combinados (fetchStats):", JSON.parse(JSON.stringify(combinedBadges)));
-      
-      const newPlayer = {
-        username: usernameKey, level: fishingData.level, experience: fishingData.experience,
-        avatarUrl: `https://www.habbo.${hotel}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`,
-        mission: userData.motto, badges: combinedBadges, fishCaught: fishingData.fishCaught,
-        goldFishCaught: fishingData.goldFishCaught, rod: fishingData.rod, hotel: hotel,
-        online: profile?.online ?? userData.online, lastaccesstime: profile?.lastaccesstime ?? null,
-        membersince: profile?.membersince ?? null, updatedat: new Date().toISOString(), // updatedat é definido aqui
-      };
-
-      const saved = await savePlayerGlobal(newPlayer);
-      if (saved) {
-        setData(newPlayer); 
-        profileCache.current[usernameKey] = profile;
-        fetchRankingGlobal(true, { bypassThrottle: true });
-        
-        console.log("[FETCH_STATS] Buscando histórico de XP para gráfico principal...");
-        setLoadingChart(true);
-        getDailyXpLogsFromSupabase(newPlayer.username, newPlayer.hotel)
-            .then(result => {
-                if(result.data) setDailyXpHistory(result.data);
-                if(result.error) console.error("[FETCH_STATS] Erro ao carregar histórico para gráfico principal:", result.error);
-            })
-            .finally(() => setLoadingChart(false));
-      } else { setError(t.xpChart.saveError || "Falha ao salvar dados."); }
-    } catch (err) {
-      console.error("[FETCH_STATS] Erro geral:", err.message, err.stack);
-      setError(err.message); setData(null);
-    } finally { setLoading(false); }
-  }, [username, hotel, t, savePlayerGlobal, fetchRankingGlobal, getDailyXpLogsFromSupabase]);
-
-  const fetchAndSaveSingleUserForAutoUpdate = useCallback(async (usernameToProcess, hotelToProcess) => {
-    console.log(`[AUTO_UPDATE] Processando: ${usernameToProcess}@${hotelToProcess}`);
-    try {
-      const usernameKey = usernameToProcess.trim().toLowerCase();
-      const userRes = await fetch(`https://origins.habbo.${hotelToProcess}/api/public/users?name=${usernameKey}`);
-      if (!userRes.ok) { if (userRes.status === 404) return { success: false, skipped: true }; throw new Error(`API User Error (auto): ${userRes.status}`);}
-      const userData = await userRes.json();
-      if (!userData.uniqueId) { console.warn(`[AUTO_UPDATE] ID de usuário inválido para ${usernameKey}`); return { success: false, skipped: true }; }
-      
-      const fishingRes = await fetch(`https://origins.habbo.${hotelToProcess}/api/public/skills/${userData.uniqueId}?skillType=FISHING`);
-      if (!fishingRes.ok) { if (fishingRes.status === 404) return { success: false, skipped: true }; throw new Error(`API Fishing Error (auto): ${fishingRes.status}`);}
-      const fishingData = await fishingRes.json();
-      if (typeof fishingData.level === "undefined") { console.warn(`[AUTO_UPDATE] Dados de pesca inválidos para ${usernameKey}`); return { success: false, skipped: true };}
-      
-      let profile = null;
-      try { const profileRes = await fetch(`https://origins.habbo.${hotelToProcess}/api/public/users/${userData.uniqueId}/profile`); if (profileRes.ok) profile = await profileRes.json(); } catch { /* Ignora */ }
-      
-      const newApiBadges = Array.isArray(userData.selectedBadges) ? userData.selectedBadges.map(b => ({code: b.code, name: b.name, description: b.description})) : [];
-      console.log(`[BADGES_AUTO] Emblemas da API para ${usernameKey}:`, JSON.parse(JSON.stringify(newApiBadges)));
-      let combinedBadges = [...newApiBadges];
-      try {
-        const { data: existingPlayerData, error: fetchExistingDbErrorAuto } = await supabase.from('ranking').select('badges').eq('username', usernameKey).eq('hotel', hotelToProcess).single();
-        if (fetchExistingDbErrorAuto && fetchExistingDbErrorAuto.code !== 'PGRST116') {
-          console.warn(`[BADGES_AUTO] Erro ao buscar emblemas do DB para ${usernameKey}:`, fetchExistingDbErrorAuto);
-        } else if (existingPlayerData && Array.isArray(existingPlayerData.badges)) {
-          const existingDbBadges = existingPlayerData.badges;
-          console.log(`[BADGES_AUTO] Emblemas do DB para ${usernameKey}:`, JSON.parse(JSON.stringify(existingDbBadges)));
-          const currentApiBadgeCodes = new Set(newApiBadges.map(b => b.code));
-          existingDbBadges.forEach(dbBadge => {
-            if (dbBadge && dbBadge.code && !currentApiBadgeCodes.has(dbBadge.code)) {
-              combinedBadges.push(dbBadge);
-            }
-          });
-        }
-      } catch (dbErrorAuto) {
-        if (dbErrorAuto.code !== 'PGRST116') console.warn(`[BADGES_AUTO] Exceção ao buscar emblemas do DB para ${usernameKey}:`, dbErrorAuto);
-      }
-      const uniqueBadgeCodesAuto = new Set();
-      const finalUniqueBadgesAuto = [];
-      for (const badge of combinedBadges) {
-        if (badge && badge.code && !uniqueBadgeCodesAuto.has(badge.code)) {
-          finalUniqueBadgesAuto.push(badge);
-          uniqueBadgeCodesAuto.add(badge.code);
-        }
-      }
-      combinedBadges = finalUniqueBadgesAuto;
-      console.log(`[BADGES_AUTO] Emblemas combinados para ${usernameKey}:`, JSON.parse(JSON.stringify(combinedBadges)));
-
-      const newPlayer = {
-        username: usernameKey, level: fishingData.level, experience: fishingData.experience,
-        avatarUrl: `https://www.habbo.${hotelToProcess}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`,
-        mission: userData.motto, badges: combinedBadges, fishCaught: fishingData.fishCaught,
-        goldFishCaught: fishingData.goldFishCaught, rod: fishingData.rod, hotel: hotelToProcess,
-        online: profile?.online ?? userData.online, lastaccesstime: profile?.lastaccesstime ?? null,
-        membersince: profile?.membersince ?? null, updatedat: new Date().toISOString(),
-      };
-      return { success: await savePlayerGlobal(newPlayer) };
-    } catch (error) {
-      console.error(`[AUTO_UPDATE_USER] Erro ${usernameToProcess}@${hotelToProcess}: ${error.message}`);
-      return { success: false };
-    }
-  }, [savePlayerGlobal]); // savePlayerGlobal é a única dependência real aqui que pode mudar
-
-  // MODIFICADO: runFullBackgroundUpdate para ser contínuo, persistente e com status dinâmico
-const runFullBackgroundUpdate = useCallback(async (startFresh = false) => {
-  if (autoUpdateInProgress.current) {
-    console.log("[AUTO_UPDATE_PERSISTENT] Ciclo já em andamento.");
-    return;
-  }
-  console.log("[AUTO_UPDATE_PERSISTENT] Iniciando ciclo de atualização...");
-  autoUpdateInProgress.current = true;
-  setIsAutoUpdatingList(true);
-
-  try {
-    let userLists;
-    let startIndex = 0;
-    let totalProcessedBefore = 0;
-
-    // Tenta carregar o estado salvo do ciclo anterior do localStorage
-    if (!startFresh) {
-      try {
-        const savedStateJSON = localStorage.getItem('autoUpdateCycleState');
-        if (savedStateJSON) {
-          const savedState = JSON.parse(savedStateJSON);
-          // Usa o estado salvo apenas se for recente (ex: menos de 1 hora)
-          const isRecent = (new Date().getTime() - savedState.timestamp) < 3600000;
-          if (isRecent) {
-            console.log(`[AUTO_UPDATE_PERSISTENT] Resumindo ciclo anterior do índice ${savedState.currentIndex}.`);
-            userLists = savedState.userLists;
-            startIndex = savedState.currentIndex;
-            totalProcessedBefore = savedState.totalProcessed;
-          }
-        }
-      } catch (e) {
-        console.error("Erro ao ler estado do localStorage, iniciando do zero.", e);
-      }
-    }
-
-    // Se não houver estado salvo/válido, busca novas listas do Supabase
-    if (!userLists) {
-      console.log("[AUTO_UPDATE_PERSISTENT] Buscando novas listas de usuários.");
-      const hotels = ["com.br", "com", "es"];
-      const promises = hotels.map(h =>
-        supabase.from('ranking').select('username').eq('hotel', h).order('updatedat', { ascending: true, nullsFirst: true })
-      );
-      const results = await Promise.all(promises);
-      userLists = {
-        "com.br": results[0].data || [],
-        "com": results[1].data || [],
-        "es": results[2].data || [],
-      };
-    }
-
-    const totalUsers = userLists["com.br"].length + userLists["com"].length + userLists["es"].length;
-    if (totalUsers === 0) {
-      console.log("[AUTO_UPDATE_PERSISTENT] Sem usuários para atualizar.");
-      localStorage.removeItem('autoUpdateCycleState');
-      setAutoUpdateProgress({ current: 0, total: 0, status: 'Concluído (sem usuários)', updatingUser: null, lastRun: new Date().toISOString() });
-      return;
-    }
+    const profileCache = useRef({});
+    const t = translations[lang] || translations["pt"];
     
-    setAutoUpdateProgress(prev => ({ ...prev, current: totalProcessedBefore, total: totalUsers }));
+    // --- Funções de Cálculo e Busca de Dados OTIMIZADAS ---
 
-    let processedThisRun = 0;
-    const longestListLength = Math.max(userLists["com.br"].length, userLists["com"].length, userLists["es"].length);
-
-    for (let i = startIndex; i < longestListLength; i++) {
-      const processUser = async (username, hotel) => {
-        if (!username) return;
-
-        setAutoUpdateProgress(prev => ({ ...prev, status: 'Atualizando...', updatingUser: { username, hotel } }));
-        await fetchAndSaveSingleUserForAutoUpdate(username, hotel);
-        processedThisRun++;
-        setAutoUpdateProgress(prev => ({ ...prev, current: totalProcessedBefore + processedThisRun }));
-        
-        // Salva o progresso no localStorage após cada usuário
-        localStorage.setItem('autoUpdateCycleState', JSON.stringify({
-            userLists: userLists,
-            currentIndex: i, // Salva o índice da 'rodada'
-            totalProcessed: totalProcessedBefore + processedThisRun,
-            timestamp: new Date().getTime()
-        }));
-        await new Promise(resolve => setTimeout(resolve, AUTO_UPDATE_USER_DELAY_MS));
-      };
-
-      await processUser(userLists["com.br"][i]?.username, "com.br");
-      await processUser(userLists["com"][i]?.username, "com");
-      await processUser(userLists["es"][i]?.username, "es");
-    }
-
-    console.log("[AUTO_UPDATE_PERSISTENT] Ciclo de atualização concluído.");
-    localStorage.removeItem('autoUpdateCycleState'); // Limpa o estado para o próximo ciclo começar do zero
-    fetchRankingGlobal(true, { bypassThrottle: true });
-    setAutoUpdateProgress(prev => ({ ...prev, status: `Concluído`, updatingUser: null, lastRun: new Date().toISOString() }));
-
-  } catch (error) {
-    console.error("[AUTO_UPDATE_PERSISTENT] Erro no ciclo:", error.message);
-    if (error.message !== "Aba em segundo plano") {
-      setAutoUpdateProgress(prev => ({ ...prev, status: `Erro: ${error.message}`, updatingUser: null, lastRun: new Date().toISOString() }));
-    }
-    // Não limpa o localStorage em caso de erro, para que possa tentar continuar depois
-  } finally {
-    setIsAutoUpdatingList(false);
-    autoUpdateInProgress.current = false;
-  }
-}, [fetchAndSaveSingleUserForAutoUpdate, fetchRankingGlobal]);
-// --- useEffects ---
-  useEffect(() => {
-    console.log(`[EFFECT_HOTEL_CHANGE] Hotel mudou para: ${hotel}`);
-    setLang(hotelLangMap[hotel] || "pt");
-    setError(""); 
-    setData(null); 
-    setDailyXpHistory([]);
-    setExpandedPlayer(null); 
-    setExpandedProfile(null);
-    setExpandedPlayerXpHistory([]);
-    profileCache.current = {}; 
-    setCurrentPage(1);
-    fetchRankingGlobal(true, { setLoadingState: true });
-  }, [hotel, fetchRankingGlobal]);
-
-  useEffect(() => {
-    console.log(`[EFFECT_REALTIME] Configurando Realtime para: ${hotel}`);
-    const channelName = `public:ranking:${hotel}`;
-    const channel = supabase.channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ranking', filter: `hotel=eq.${hotel}` },
-        (payload) => {
-          console.log(`[REALTIME_EVENT] ${channelName}:`, payload.eventType);
-          fetchRankingGlobal(false, { bypassThrottle: true });
-        }
-      ).subscribe((status, err) => {
-        if (err) console.error(`[REALTIME_SUB_ERROR] ${channelName}:`, err);
-        else console.log(`[REALTIME_STATUS] ${channelName}: ${status}`);
-      });
-    return () => { 
-      console.log(`[EFFECT_REALTIME] Removendo Realtime: ${channelName}`);
-      supabase.removeChannel(channel).catch(err => console.error("Error removing channel", err)); 
-    };
-  }, [hotel, fetchRankingGlobal]);
-
-  useEffect(() => {
-    // O gráfico principal é carregado/atualizado dentro de fetchStats.
-    // Este useEffect apenas limpa o gráfico se 'data' (jogador principal) for nulo.
-    if (!data) {
-      setDailyXpHistory([]); 
-    }
-  }, [data]);
-
- // MODIFICADO: useEffect para rodar mesmo com a aba minimizada (com throttling do navegador)
-  useEffect(() => {
-    let isMounted = true;
-    let timeoutId;
-
-    const loop = async () => {
-      // Roda um ciclo completo de atualização
-      await runFullBackgroundUpdate();
-
-      if (isMounted) {
-        // Agenda o próximo ciclo para recomeçar após um curto intervalo
-        console.log("[AUTO_UPDATE_INTERVAL] Ciclo concluído. Reiniciando em 15 segundos.");
-        timeoutId = setTimeout(loop, 15000); // Aumentei um pouco o delay entre ciclos para ser mais "gentil"
-      }
-    };
-
-    // Inicia o loop pela primeira vez ao carregar a página
-    console.log("[AUTO_UPDATE_INTERVAL] Iniciando processo de atualização contínua.");
-    timeoutId = setTimeout(loop, 5000);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-      console.log(`[AUTO_UPDATE_INTERVAL] Ciclo de atualização contínuo interrompido.`);
-    };
-  }, [runFullBackgroundUpdate]);
-
-  // --- Manipuladores de Eventos ---
-  const handlePlayerClick = useCallback(async (player) => {
-    if (expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel) {
-      setExpandedPlayer(null); 
-      setExpandedProfile(null);
-      setExpandedPlayerXpHistory([]);
-    } else {
-      console.log(`[HANDLE_CLICK] Expandindo ${player.username}`);
-      setExpandedPlayer(player);
-      setExpandedProfile(profileCache.current[player.username] || null);
-      setExpandedPlayerXpHistory([]); 
-      setLoadingExpandedChart(true);
-
-      if (!profileCache.current[player.username]) {
-        try {
-          console.log(`[HANDLE_CLICK] Buscando perfil para ${player.username}`);
-          const userRes = await fetch(`https://origins.habbo.${player.hotel}/api/public/users?name=${player.username}`);
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            if (userData.uniqueId) {
-              const profileRes = await fetch(`https://origins.habbo.${player.hotel}/api/public/users/${userData.uniqueId}/profile`);
-              if (profileRes.ok) {
-                const profileData = await profileRes.json();
-                setExpandedProfile(profileData); 
-                profileCache.current[player.username] = profileData;
-              }
+    const fetchPlayerGains = useCallback(async (playerName, playerHotel, currentXp) => {
+        const getXpAt = async (timestamp) => {
+            const { data, error } = await supabase
+                .from('xp_history')
+                .select('experience')
+                .eq('username', playerName.toLowerCase())
+                .eq('hotel', playerHotel)
+                .lte('logged_at', timestamp)
+                .order('logged_at', { ascending: false })
+                .limit(1)
+.maybeSingle();
+;
+            
+            if (error && error.code === 'PGRST116') { // 'PGRST116' = no rows found
+                return 0;
             }
-          } else {
-             console.warn(`[HANDLE_CLICK] Falha ao buscar perfil (API user) para ${player.username}: ${userRes.status}`);
-          }
-        } catch (err) { 
-          console.error("[HANDLE_CLICK] Erro ao buscar perfil expandido:", err.message); 
+            return data?.experience || 0;
+        };
+
+        try {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+            const weekDate = new Date(now);
+            const dayOfWeek = weekDate.getDay();
+            const diff = weekDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const startOfWeek = new Date(new Date(now).setDate(diff)).toISOString();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+            const [xpStartToday, xpStartWeek, xpStartMonth] = await Promise.all([
+                getXpAt(startOfToday),
+                getXpAt(startOfWeek),
+                getXpAt(startOfMonth),
+            ]);
+            
+            return {
+                today: Math.max(0, currentXp - xpStartToday),
+                week: Math.max(0, currentXp - xpStartWeek),
+                month: Math.max(0, currentXp - xpStartMonth),
+            };
+        } catch (error) {
+            console.error("Error fetching player gains:", error);
+            return { today: 0, week: 0, month: 0 };
         }
-      }
-      
-      console.log(`[HANDLE_CLICK] Buscando histórico de XP para ${player.username}`);
-      getDailyXpLogsFromSupabase(player.username, player.hotel)
-        .then(result => {
-          if (result.data) setExpandedPlayerXpHistory(result.data);
-          if (result.error) console.error(`[HANDLE_CLICK] Erro ao carregar histórico para ${player.username} (expandido):`, result.error.message);
-        })
-        .finally(() => setLoadingExpandedChart(false));
-    }
-  }, [expandedPlayer, getDailyXpLogsFromSupabase]); // Adicionado getDailyXpLogsFromSupabase
+    }, []);
 
-  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+    const fetchRankingGlobal = useCallback(async (options) => {
+        const shouldSetLoading = options?.setLoadingState ?? false;
+        if (shouldSetLoading) setLoading(true);
 
-  // --- Cálculos para Renderização ---
-  const dataIndexInRanking = data ? ranking.findIndex((p) => p.username === data.username && p.hotel === data.hotel) : -1;
-  const totalPages = Math.ceil(ranking.length / ITEMS_PER_PAGE);
-  const paginatedRanking = ranking.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+        try {
+// LINHA CORRIGIDA
+const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_final_test', { hotel_param: hotel });
+            
+            if (rpcError) throw rpcError;
 
-  // --- Renderização ---
-  return (
-    <>
-      <div className="min-h-screen w-full flex flex-col items-center font-mono" style={{ background: "#101217", position: "relative", overflowX: "hidden" }} >
-        <div style={{ background: "url('/img/fundo.png') no-repeat center center", backgroundSize: "798px 671px", width: "100vw", height: "100vh", position: "fixed", zIndex: 0, top: 0, left: 0 }} />
-        <img src="/img/banner.png" alt="Fishing Banner" width={460} height={90} className="mx-auto select-none" style={{ marginTop: "max(5vh, 20px)", marginBottom: 20, imageRendering: "pixelated", display: "block", position: "relative", zIndex: 2, filter: "drop-shadow(0 6px 20px #0009)", pointerEvents: "none" }} />
-        
-        <div className="relative z-10 w-full max-w-4xl rounded-lg px-4 sm:px-6 py-8 mb-10" >
-          <div className="flex items-center justify-center gap-4 sm:gap-7 mb-6">
-            {FLAGS.map((flag) => (
-              <div key={flag.code} onClick={() => setHotel(flag.code)} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
-                <img src={flag.img} alt={flag.label} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
-                <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace" }}> {flag.label} </span>
-              </div>
-            ))}
-          </div>
+            let finalRanking = (rankingData || []).map(player => ({
+                ...player,
+                gains: {
+                    today: player.gain_today,
+                    week: player.gain_week,
+                    month: player.gain_month,
+                }
+            }));
 
-          <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.88)", border: "1.5px solid rgba(149,117,58,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
-            <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)" }} />
-            <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s" }} onClick={fetchStats} disabled={loading || !username.trim()} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
-              {loading && data === null ? t.loading : t.button}
-            </button>
-          </div>
-          
+            if (hotel !== 'global') {
+                finalRanking = finalRanking.filter(p => p.hotel === hotel);
+            }
+            
+            setRanking(finalRanking);
+            if (options?.setLoadingState) setCurrentPage(1);
+
+        } catch (err) {
+            console.error("[DEBUG] Error in fetchRankingGlobal:", err.message);
+            setError(t.xpChart.loadingError || "Falha ao carregar ranking.");
+        } finally {
+            if (shouldSetLoading) setLoading(false);
+        }
+    }, [hotel, t]);
+    
+    const getDailyXpLogsFromSupabase = useCallback(async (playerName, playerHotel) => {
+       if (!playerName || !playerHotel) return { data: [], error: new Error("Nome do jogador ou hotel não fornecido.") };
+       try {
+           const { data: xpLogs, error: fetchError } = await supabase.from('xp_history').select('logged_at, experience, level').eq('username', playerName.toLowerCase()).eq('hotel', playerHotel).order('logged_at', { ascending: true }).limit(200);
+           if (fetchError) throw fetchError;
+           if (!xpLogs) return { data: [], error: null };
+           const formattedData = xpLogs.map(log => {
+               const dateObj = new Date(log.logged_at);
+               return {
+                   timestamp: dateObj.getTime(),
+                   experience: log.experience,
+                   level: log.level,
+                   tooltipLabel: dateObj.toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+               };
+           });
+           return { data: formattedData, error: null };
+       } catch (err) {
+           return { data: [], error: err };
+       }
+    }, []);
+
+    const savePlayerGlobal = useCallback(async (player) => {
+       try {
+           const playerToSave = { ...player, updatedat: new Date().toISOString() };
+           const { error: saveError } = await supabase.from('ranking').upsert([playerToSave], { onConflict: ['username', 'hotel'] });
+           if (saveError) throw saveError;
+
+           if (player.username && player.hotel && typeof player.experience === 'number') {
+               await supabase.from('xp_history').insert({
+                   username: player.username.toLowerCase(), hotel: player.hotel,
+                   level: player.level, experience: player.experience,
+                   logged_at: new Date().toISOString()
+               });
+           }
+           return true;
+       } catch (err) {
+           return false;
+       }
+    }, []);
+
+    const fetchStats = useCallback(async () => {
+        if (!username.trim()) { setError(t.placeholder); return; }
+        setLoading(true); setError(""); setData(null); setPlayerGains(null);
+        setDailyXpHistory([]);
+
+        try {
+            const usernameKey = username.trim().toLowerCase();
+            const hotelToSearch = hotel === 'global' ? 'com.br' : hotel;
+
+            const userRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/users?name=${usernameKey}`);
+            if (!userRes.ok) { if (userRes.status === 404) throw new Error(t.userNotFound); throw new Error(`API User Error: ${userRes.status}`); }
+            const userData = await userRes.json();
+            const uniqueId = userData.uniqueId;
+            if (!uniqueId) throw new Error("ID de usuário inválido.");
+            
+            const fishingRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/skills/${uniqueId}?skillType=FISHING`);
+            if (!fishingRes.ok) { if (fishingRes.status === 404) throw new Error(t.skillsMissing); throw new Error(`API Fishing Error: ${fishingRes.status}`); }
+            const fishingData = await fishingRes.json();
+            if (typeof fishingData.level === "undefined") throw new Error(t.skillsMissing);
+            
+            let profile = null;
+            try {
+                const profileRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/users/${uniqueId}/profile`);
+                if (profileRes.ok) profile = await profileRes.json();
+            } catch (profileError) { console.warn("Erro ao buscar perfil:", profileError.message); }
+
+            const newApiBadges = Array.isArray(userData.selectedBadges) ? userData.selectedBadges.map(b => ({ code: b.code, name: b.name, description: b.description })) : [];
+            let combinedBadges = [...newApiBadges];
+            
+            const { data: existingPlayerData } = await supabase.from('ranking').select('badges').eq('username', usernameKey).eq('hotel', hotelToSearch).single();
+            if (existingPlayerData && Array.isArray(existingPlayerData.badges)) {
+                const currentApiBadgeCodes = new Set(newApiBadges.map(b => b.code));
+                existingPlayerData.badges.forEach(dbBadge => {
+                    if (dbBadge && dbBadge.code && !currentApiBadgeCodes.has(dbBadge.code)) combinedBadges.push(dbBadge);
+                });
+            }
+            const uniqueBadgeCodes = new Set();
+            const finalUniqueBadges = combinedBadges.filter(badge => {
+               if (badge && badge.code && !uniqueBadgeCodes.has(badge.code)) {
+                   uniqueBadgeCodes.add(badge.code);
+                   return true;
+               }
+               return false;
+            });
+            
+            const newPlayer = {
+                username: usernameKey, level: fishingData.level, experience: fishingData.experience,
+                avatarUrl: `https://www.habbo.${hotelToSearch}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`,
+                mission: userData.motto, badges: finalUniqueBadges, fishCaught: fishingData.fishCaught,
+                goldFishCaught: fishingData.goldFishCaught, rod: fishingData.rod, hotel: hotelToSearch,
+                online: profile?.online ?? userData.online, lastaccesstime: profile?.lastaccesstime ?? null,
+                membersince: profile?.membersince ?? null, updatedat: new Date().toISOString(),
+            };
+
+            const saved = await savePlayerGlobal(newPlayer);
+            if (saved) {
+                setData(newPlayer);
+                const gains = await fetchPlayerGains(newPlayer.username, newPlayer.hotel, newPlayer.experience);
+                setPlayerGains(gains);
+
+                profileCache.current[usernameKey] = profile;
+                fetchRankingGlobal({});
+                
+                setLoadingChart(true);
+                getDailyXpLogsFromSupabase(newPlayer.username, newPlayer.hotel)
+                    .then(result => {
+                        if(result.data) setDailyXpHistory(result.data);
+                    }).finally(() => setLoadingChart(false));
+            } else { setError(t.xpChart.saveError || "Falha ao salvar dados."); }
+        } catch (err) {
+            setError(err.message); setData(null);
+        } finally { setLoading(false); }
+    }, [username, hotel, t, savePlayerGlobal, getDailyXpLogsFromSupabase, fetchPlayerGains, fetchRankingGlobal]);
+    
+    // --- useEffects ---
+    useEffect(() => {
+        setLang(hotelLangMap[hotel] || "pt");
+        setError(""); setData(null); setPlayerGains(null);
+        setExpandedPlayer(null); setExpandedProfile(null);
+        setCurrentPage(1);
+        fetchRankingGlobal({ setLoadingState: true });
+    }, [hotel]);
+
+    useEffect(() => {
+        const channel = supabase.channel('ranking-changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'ranking' },
+            (payload) => {
+                fetchRankingGlobal({});
+            }
+          ).subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [fetchRankingGlobal]);
+
+    // --- Manipuladores de Eventos ---
+    const handlePlayerClick = useCallback(async (player) => {
+        if (expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel) {
+            setExpandedPlayer(null); setExpandedProfile(null); setExpandedPlayerXpHistory([]);
+        } else {
+            setExpandedPlayer(player);
+            setExpandedProfile(profileCache.current[player.username] || null);
+            setExpandedPlayerXpHistory([]); setLoadingExpandedChart(true);
+            
+            getDailyXpLogsFromSupabase(player.username, player.hotel)
+                .then(result => {
+                    if (result.data) setExpandedPlayerXpHistory(result.data);
+                }).finally(() => setLoadingExpandedChart(false));
+        }
+    }, [expandedPlayer, getDailyXpLogsFromSupabase]);
+
+    const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+};
+    
+    // --- Cálculos para Renderização ---
+    const sortedRanking = React.useMemo(() => {
+        const sorted = [...ranking];
+        if (rankingPeriod === 'geral') return sorted.sort((a, b) => b.experience - a.experience);
+        if (rankingPeriod === 'diario') return sorted.sort((a, b) => (b.gains?.today || 0) - (a.gains?.today || 0));
+        if (rankingPeriod === 'semanal') return sorted.sort((a, b) => (b.gains?.week || 0) - (a.gains?.week || 0));
+        if (rankingPeriod === 'mensal') return sorted.sort((a, b) => (b.gains?.month || 0) - (a.gains?.month || 0));
+        return sorted;
+    }, [ranking, rankingPeriod]);
+
+    const dataIndexInRanking = data ? sortedRanking.findIndex((p) => p.username === data.username && p.hotel === data.hotel) : -1;
+    const totalPages = Math.ceil(sortedRanking.length / ITEMS_PER_PAGE);
+    const paginatedRanking = sortedRanking.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    
+    const tabStyle = {
+        padding: '8px 16px',
+        cursor: 'pointer',
+        background: 'rgba(42,34,21,0.8)',
+        color: '#ccc0a5',
+        border: '1.5px solid #a9865a',
+        borderRadius: '8px',
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: '10px'
+    };
+    const activeTabStyle = {
+        ...tabStyle,
+        background: '#e8a235',
+        color: '#fff8f0',
+        borderColor: '#ffc76a'
+    };
+
+    // --- Renderização ---
+    return (
+        <>
+            <div className="min-h-screen w-full flex flex-col items-center font-mono" style={{ background: "#101217", position: "relative", overflowX: "hidden" }} >
+                <div style={{ background: "url('/img/fundo.png') no-repeat center center", backgroundSize: "798px 671px", width: "100vw", height: "100vh", position: "fixed", zIndex: 0, top: 0, left: 0 }} />
+                <img src="/img/banner.png" alt="Fishing Banner" width={460} height={90} className="mx-auto select-none" style={{ marginTop: "max(5vh, 20px)", marginBottom: 20, imageRendering: "pixelated", display: "block", position: "relative", zIndex: 2, filter: "drop-shadow(0 6px 20px #0009)", pointerEvents: "none" }} />
+                
+                <div className="relative z-10 w-full max-w-4xl rounded-lg px-4 sm:px-6 py-8 mb-10" >
+                    <div className="flex items-center justify-center gap-4 sm:gap-7 mb-6">
+                        {FLAGS.map((flag) => (
+                            <div key={flag.code} onClick={() => {setHotel(flag.code); setRankingPeriod('geral');}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
+                                <img src={flag.img} alt={flag.label} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
+                                <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace" }}> {flag.label} </span>
+                            </div>
+                        ))}
+                    </div>
+
+                   {/* 👇 Adicione a condição AQUI, antes do div da barra de pesquisa */}
+{hotel !== 'global' && (
+    <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.88)", border: "1.5px solid rgba(149,117,58,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
+        <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)" }} />
+        <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s" }} onClick={fetchStats} disabled={loading || !username.trim()} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
+            {loading && data === null ? t.loading : t.button}
+        </button>
+    </div>
+)}
+{/* 👆 E feche a condição AQUI, depois do </div> da barra de pesquisa */}
 
 
-          {/* Status da Atualização Automática */}
-          {isAutoUpdatingList && (
-            <div className="text-center text-xs font-mono p-2 rounded-md my-3" style={{color: "#e6c786", background: "rgba(40,30,15,0.6)", border: "1px solid rgba(128,84,44,0.3)"}}>
-              <p>{t.autoUpdateStatus} ({autoUpdateProgress.current}/{autoUpdateProgress.total})</p>
-              
-              {/* Lógica para mostrar o usuário atual com bandeira */}
-              {autoUpdateProgress.updatingUser ? (
-                <div className="flex items-center justify-center gap-2 opacity-80" style={{height: '16px'}}>
-                  <span>{autoUpdateProgress.updatingUser.username}</span>
-                  <img 
-                    src={getFlagImgForHotel(autoUpdateProgress.updatingUser.hotel)} 
-                    alt={autoUpdateProgress.updatingUser.hotel}
-                    style={{ height: '16px', width: 'auto', imageRendering: 'pixelated' }}
-                  />
+                    {error && ( <div className="text-center text-red-300 font-mono font-semibold my-4 p-3 bg-red-900 bg-opacity-50 rounded-md border border-red-700"> {error} </div> )}
+                    
+                    {data && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 mb-6">
+                            <div className="lg:col-span-2">
+                                <PlayerCard player={data} t={t} dataIndexInRanking={dataIndexInRanking} handlePlayerClick={handlePlayerClick} playerGains={playerGains} />
+                            </div>
+                            <div className="lg:col-span-1">
+                                <DailyXpProgressChart data={dailyXpHistory} t={t} isLoading={loadingChart} chartHeight={300} />
+                            </div>
+                        </div>
+                    )}
+
+                    {loading && !data && !error && ( <div className="text-center text-yellow-200 font-mono my-4 text-sm">{t.loading}</div> )}
+                    
+                    <div className="flex justify-center mb-4 mt-8"> <img src="/img/ranking.png" alt="Ranking" style={{ height: 64, objectFit: "contain", filter: "drop-shadow(0 3px 8px #00000080)" }} /> </div>
+
+                    <div className="flex justify-center gap-2 mb-4">
+                        {Object.keys(t.rankingTabs).map(period => (
+                            <button key={period} onClick={() => setRankingPeriod(period)} style={rankingPeriod === period ? activeTabStyle : tabStyle}>
+                                {t.rankingTabs[period]}
+                            </button>
+                        ))}
+                    </div>
+
+                    {paginatedRanking.length > 0 ? (
+                        <>
+                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                                {paginatedRanking.map((player, index) => (
+                                    <RankingItem
+                                        key={`${player.username}-${player.hotel}-${index}`}
+                                        player={player}
+                                        index={(currentPage - 1) * ITEMS_PER_PAGE + index}
+                                        t={t}
+                                        handlePlayerClick={handlePlayerClick}
+                                        expandedPlayer={expandedPlayer}
+                                        expandedProfile={expandedProfile}
+                                        expandedPlayerXpHistory={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? expandedPlayerXpHistory : []}
+                                        loadingExpandedChart={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? loadingExpandedChart : false}
+                                        currentHotel={hotel}
+                                    />
+                                ))}
+                            </ul>
+                            {totalPages > 1 && (
+    <div className="flex justify-center items-center mt-6 font-mono gap-2 text-sm">
+        {/* Botão Anterior */}
+        <button 
+            onClick={handlePrevPage} 
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" 
+            style={{ background: currentPage === 1 ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}
+        >
+            {t.prevPage}
+        </button>
+
+        {/* Números das Páginas */}
+        {(() => {
+            const pageNumbers = [];
+            const pageRange = 5; // Quantos números mostrar ao redor da página atual
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - pageRange && i <= currentPage + pageRange)) {
+                    pageNumbers.push(i);
+                }
+            }
+
+            const paginacaoComElipses = [];
+            let ultimoNumero = 0;
+            for (const numero of pageNumbers) {
+                if (ultimoNumero) {
+                    if (numero - ultimoNumero > 1) {
+                        paginacaoComElipses.push('...');
+                    }
+                }
+                paginacaoComElipses.push(numero);
+                ultimoNumero = numero;
+            }
+
+            return paginacaoComElipses.map((page, index) => 
+                typeof page === 'number' ? (
+                    <button 
+                        key={index} 
+                        onClick={() => handlePageClick(page)}
+                        className="w-8 h-8 rounded transition-colors"
+                        style={{
+                            color: page === currentPage ? '#1a150e' : '#ffeac2',
+                            background: page === currentPage ? '#ffc76a' : 'rgba(74,57,30,0.8)',
+                            border: '1.5px solid #c79b5b',
+                            fontWeight: page === currentPage ? 'bold' : 'normal'
+                        }}
+                    >
+                        {page}
+                    </button>
+                ) : (
+                    <span key={index} className="px-1 text-yellow-200/50">...</span>
+                )
+            );
+        })()}
+
+        {/* Botão Próximo */}
+        <button 
+            onClick={handleNextPage} 
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" 
+            style={{ background: (currentPage === totalPages || totalPages === 0) ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}
+        >
+            {t.nextPage}
+        </button>
+    </div>
+)}
+                        </>
+                    ) : (
+                        !loading && !error && ( <div className="text-center text-gray-400 font-mono py-5"> {t.xpChart.loadingError || "Nenhum jogador no ranking para este hotel ainda."} </div> )
+                    )}
                 </div>
-              ) : (
-                <p className="opacity-80" style={{height: '16px'}}>{autoUpdateProgress.status}</p>
-              )}
-              
-              {autoUpdateProgress.lastRun && <p className="text-xs opacity-60 mt-1">Última conclusão: {formatDate(autoUpdateProgress.lastRun)}</p>}
+                <Footer t={t} />
             </div>
-          )}
-
-
-
-          {error && ( <div className="text-center text-red-300 font-mono font-semibold my-4 p-3 bg-red-900 bg-opacity-50 rounded-md border border-red-700"> {error} </div> )}
-          
-          {data && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 mb-6">
-              <div className="lg:col-span-2">
-                <PlayerCard player={data} t={t} dataIndexInRanking={dataIndexInRanking} handlePlayerClick={handlePlayerClick} />
-              </div>
-              <div className="lg:col-span-1">
-                <DailyXpProgressChart data={dailyXpHistory} t={t} isLoading={loadingChart} chartHeight={300} />
-              </div>
-            </div>
-          )}
-
-          {loading && !data && !error && ( <div className="text-center text-yellow-200 font-mono my-4 text-sm">{t.loading}</div> )}
-          
-          <div className="flex justify-center mb-4 mt-8"> <img src="/img/ranking.png" alt="Ranking" style={{ height: 64, objectFit: "contain", filter: "drop-shadow(0 3px 8px #00000080)" }} /> </div>
-          
-          {ranking.length > 0 ? (
-            <>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
-                {paginatedRanking.map((player, index) => (
-                  <RankingItem 
-                    key={`${player.username}-${player.hotel}-${index}`} 
-                    player={player} 
-                    index={(currentPage - 1) * ITEMS_PER_PAGE + index} 
-                    t={t} 
-                    handlePlayerClick={handlePlayerClick} 
-                    expandedPlayer={expandedPlayer} 
-                    expandedProfile={expandedProfile}
-                    expandedPlayerXpHistory={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? expandedPlayerXpHistory : []}
-                    loadingExpandedChart={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? loadingExpandedChart : false}
-                  />
-                ))}
-              </ul>
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-6 font-mono">
-                  <button onClick={handlePrevPage} disabled={currentPage === 1} className="px-4 py-2 rounded text-sm disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" style={{ background: currentPage === 1 ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}> {t.prevPage} </button>
-                  <span style={{color: "#f7e7d2"}}>{t.page} {currentPage} / {totalPages}</span>
-                  <button onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-2 rounded text-sm disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" style={{ background: (currentPage === totalPages || totalPages === 0) ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}> {t.nextPage} </button>
-                </div>
-              )}
-            </>
-          ) : (
-            !loading && !error && ( <div className="text-center text-gray-400 font-mono py-5"> {t.xpChart.loadingError || "Nenhum jogador no ranking para este hotel ainda."} </div> )
-          )}
-        </div>
- <Footer t={t} />
-      </div>
-    </>
-  );
+        </>
+    );
 };
 
 export default App;
