@@ -51,7 +51,8 @@ const translations = {
     autoUpdateStatus: "Atualização em segundo plano",
     nextPage: "Próxima", prevPage: "Anterior", page: "Página",
     growth: "Crescimento", today: "Hoje", thisWeek: "Esta semana", thisMonth: "Este mês",
-    rankingTabs: { geral: "Top Geral", diario: "Top Diário", semanal: "Top Semanal", mensal: "Top Mensal" },
+    rankingTabs: { geral: "Top Geral", diario: "Top Diário", semanal: "Top Semanal", mensal: "Top Mensal", badges: "Top Emblemas" },
+    selectFlagSearch: "Selecione uma bandeira de país para habilitar a busca por usuário",
     xpChart: {
       title: "Progressão XP",
       noData: "Sem histórico de XP para exibir.",
@@ -77,7 +78,8 @@ const translations = {
     autoUpdateStatus: "Background update",
     nextPage: "Next", prevPage: "Previous", page: "Page",
     growth: "Growth", today: "Today", thisWeek: "This week", thisMonth: "This month",
-    rankingTabs: { geral: "Overall Top", diario: "Daily Top", semanal: "Weekly Top", mensal: "Monthly Top" },
+    rankingTabs: { geral: "Overall Top", diario: "Daily Top", semanal: "Weekly Top", mensal: "Monthly Top", badges: "Top Badges" },
+    selectFlagSearch: "Select a country flag to enable user search",
     xpChart: {
       title: "XP Progression",
       noData: "No XP history to display.",
@@ -103,7 +105,8 @@ const translations = {
     autoUpdateStatus: "Actualización en segundo plano",
     nextPage: "Siguiente", prevPage: "Anterior", page: "Página",
     growth: "Crecimiento", today: "Hoy", thisWeek: "Esta semana", thisMonth: "Este mes",
-    rankingTabs: { geral: "Top General", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensual" },
+    rankingTabs: { geral: "Top General", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensual", badges: "Top Placas" },
+    selectFlagSearch: "Seleccione la bandera de un país para habilitar la búsqueda de usuarios",
     xpChart: {
       title: "Progresión de XP",
       noData: "No hay historial de XP para mostrar.",
@@ -369,6 +372,8 @@ const App = () => {
     const [loadingChart, setLoadingChart] = useState(false);
     const [expandedPlayerXpHistory, setExpandedPlayerXpHistory] = useState([]);
     const [loadingExpandedChart, setLoadingExpandedChart] = useState(false);
+    const [lastSearchedUsers, setLastSearchedUsers] = useState([]);
+    const [searchHotel, setSearchHotel] = useState(''); // New state for search-specific hotel
 
     const profileCache = useRef({});
     const t = translations[lang] || translations["pt"];
@@ -501,7 +506,7 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
 
         try {
             const usernameKey = username.trim().toLowerCase();
-            const hotelToSearch = hotel === 'global' ? 'com.br' : hotel;
+            const hotelToSearch = hotel === 'global' ? (searchHotel || 'com.br') : hotel;
 
             const userRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/users?name=${usernameKey}`);
             if (!userRes.ok) { if (userRes.status === 404) throw new Error(t.userNotFound); throw new Error(`API User Error: ${userRes.status}`); }
@@ -562,6 +567,11 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
                     .then(result => {
                         if(result.data) setDailyXpHistory(result.data);
                     }).finally(() => setLoadingChart(false));
+                
+                setLastSearchedUsers(prev => {
+                    const updated = [newPlayer, ...prev.filter(p => p.username !== newPlayer.username || p.hotel !== newPlayer.hotel)];
+                    return updated.slice(0, 5); // Keep only the last 5 searched users
+                });
             } else { setError(t.xpChart.saveError || "Falha ao salvar dados."); }
         } catch (err) {
             setError(err.message); setData(null);
@@ -616,6 +626,7 @@ const handlePageClick = (pageNumber) => {
         if (rankingPeriod === 'diario') return sorted.sort((a, b) => (b.gains?.today || 0) - (a.gains?.today || 0));
         if (rankingPeriod === 'semanal') return sorted.sort((a, b) => (b.gains?.week || 0) - (a.gains?.week || 0));
         if (rankingPeriod === 'mensal') return sorted.sort((a, b) => (b.gains?.month || 0) - (a.gains?.month || 0));
+        if (rankingPeriod === 'badges') return sorted.sort((a, b) => (b.badges?.length || 0) - (a.badges?.length || 0));
         return sorted;
     }, [ranking, rankingPeriod]);
 
@@ -650,23 +661,52 @@ const handlePageClick = (pageNumber) => {
                 <div className="relative z-10 w-full max-w-4xl rounded-lg px-4 sm:px-6 py-8 mb-10" >
                     <div className="flex items-center justify-center gap-4 sm:gap-7 mb-6">
                         {FLAGS.map((flag) => (
-                            <div key={flag.code} onClick={() => {setHotel(flag.code); setRankingPeriod('geral');}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
+                            <div key={flag.code} onClick={() => {setHotel(flag.code); setRankingPeriod('geral'); setUsername(''); setData(null);}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
                                 <img src={flag.img} alt={flag.label} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
                                 <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace" }}> {flag.label} </span>
                             </div>
                         ))}
                     </div>
 
-                   {/* 👇 Adicione a condição AQUI, antes do div da barra de pesquisa */}
-{hotel !== 'global' && (
-    <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.88)", border: "1.5px solid rgba(149,117,58,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
-        <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)" }} />
-        <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s" }} onClick={fetchStats} disabled={loading || !username.trim()} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
-            {loading && data === null ? t.loading : t.button}
-        </button>
-    </div>
-)}
-{/* 👆 E feche a condição AQUI, depois do </div> da barra de pesquisa */}
+                   
+                    <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.88)", border: "1.5px solid rgba(149,117,58,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
+                        {hotel === 'global' && (
+                            <p className="text-center text-yellow-300 font-mono text-sm mb-4">
+                                {t.selectFlagSearch}
+                            </p>
+                        )}
+                        <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)" }} disabled={hotel === 'global' && !searchHotel} />
+                        {hotel === 'global' && (
+                            <div className="flex items-center justify-center gap-2 mt-4">
+                                {FLAGS.filter(flag => flag.code !== 'global').map((flag) => (
+                                    <div key={flag.code} onClick={() => {setSearchHotel(flag.code); setLang(hotelLangMap[flag.code] || "pt");}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: searchHotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: searchHotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 4, border: searchHotel === flag.code ? "1.5px solid #ffc76a" : "1.5px solid transparent", boxShadow: searchHotel === flag.code ? "0 2px 8px #e7b76755" : "none", background: "#1c1712", padding: "3px" }}>
+                                        <img src={flag.img} alt={flag.label} style={{ width: 32, height: 21, objectFit: "cover", borderRadius: 3, display: "block", border: "1px solid #443322" }} />
+                                        <span className="block text-xs text-center mt-1" style={{ color: searchHotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace", fontSize: "8px" }}> {flag.label} </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s" }} onClick={fetchStats} disabled={loading || !username.trim() || (hotel === 'global' && !searchHotel)} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
+                            {loading && data === null ? t.loading : t.button}
+                        </button>
+                    </div>
+                    {lastSearchedUsers.length > 0 && hotel !== 'global' && (
+                        <div className="rounded-lg p-5 mb-6" style={{ background: "rgba(24,19,10,0.88)", border: "1.5px solid rgba(149,117,58,0.2)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}>
+                            <h3 className="text-md font-bold mb-3" style={{ color: "#ffeac2" }}>Últimos Usuários Pesquisados:</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {lastSearchedUsers.map((user, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => { setUsername(user.username); setHotel(user.hotel); }}
+                                        className="px-3 py-1.5 rounded-md text-xs font-mono"
+                                        style={{ background: "#e8a235", color: "#fff8f0", border: "1px solid #a9865a" }}
+                                    >
+                                        {capitalize(user.username)} ({user.hotel})
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
 
                     {error && ( <div className="text-center text-red-300 font-mono font-semibold my-4 p-3 bg-red-900 bg-opacity-50 rounded-md border border-red-700"> {error} </div> )}
