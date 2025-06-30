@@ -43,3 +43,47 @@ code {
   scrollbar-width: thin;
   scrollbar-color: #ffd27f rgba(28, 22, 14, 0.98); /* Cor do polegar e cor da trilha */
 }
+/* Adicione este código no final de src/index.css */
+
+/* A biblioteca react-tooltip cria o seletor pelo ID que demos */
+[data-tooltip-id='badge-tooltip'] {
+    /* Estilos que já colocamos inline, mas o CSS é mais limpo */
+    padding: 0px !important; 
+}
+
+/* Isto cria a "setinha" do balão de fala */
+[data-tooltip-id='badge-tooltip']::after {
+    content: ' ';
+    position: absolute;
+    top: 100%; /* Posiciona a seta na parte de baixo do tooltip */
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #c09b57 transparent transparent transparent; /* A cor da borda cria o triângulo */
+}
+/* Estilo para o balão de fala do tooltip */
+.custom-tooltip {
+  background: #2a2215 !important; /* Usamos !important para sobrescrever o estilo padrão */
+  border: 1.5px solid #c79b5b !important;
+  border-radius: 8px !important;
+  font-family: 'Press Start 2P', monospace !important; /* Mantém a fonte do seu site */
+  font-size: 12px !important;
+  padding: 10px 15px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  max-width: 250px !important;
+}
+
+/* A "seta" do balão de fala */
+/* Este exemplo é para um tooltip que aparece ACIMA (place="top") */
+.custom-tooltip::after {
+  content: ' ';
+  position: absolute;
+  top: 100%; /* Posiciona a seta na parte de baixo do tooltip */
+  left: 50%;
+  margin-left: -7px; /* Metade da largura da seta */
+  border-width: 7px;
+  border-style: solid;
+  /* O truque da seta: a borda de cima tem cor, as outras são transparentes */
+  border-color: #c79b5b transparent transparent transparent;
+}

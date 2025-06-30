@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import "@fontsource/press-start-2p";
 import DailyXpProgressChart from "./components/DailyXpProgressChart";
+import { Tooltip } from 'react-tooltip';
 
 // --- Configurações Supabase ---
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -228,7 +229,19 @@ const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClic
         <div className="mt-2">
             <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
             {player.badges && player.badges.length > 0 ? (
-                <div className="flex flex-wrap gap-1 mt-1 items-center"> {player.badges.map((badge, idx) => <Badge key={badge.code || `badge-${idx}`} code={badge.code} name={badge.name} />)} </div>
+                <div className="flex flex-wrap gap-1 mt-1 items-center"> {player.badges.map((badge, idx) => {
+                        const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">
+                            <img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" />
+                            <strong style="display: block; color: #ffd27f;">${badge.code}</strong>
+                            <p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>
+                        </div>`;
+                        return (
+                            <a key={badge.code || `badge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent}>
+                                <Badge code={badge.code} name={badge.name} />
+                            </a>
+                        );
+                    })}
+                </div>
             ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
         </div>
     </div>
@@ -263,14 +276,21 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
       <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 font-mono text-xs items-center justify-between">
         {player.badges && player.badges.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1 items-center">
-             {player.badges.slice(0, 5).map((badge, idx) => ( <Badge key={badge.code || `sbadge-${idx}`} code={badge.code} name={badge.name} /> ))}
-             {player.badges.length > 5 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 5})</span>}
-           </div>
-        )}
-        {player.updatedat && ( <span className="text-xs opacity-60 whitespace-nowrap" style={{ color: "#b3a079" }}> {formatDate(player.updatedat)} </span> )}
-      </div>
+              {player.badges.slice(0, 5).map((badge, idx) => {
+                        const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">...</div>`; // (Conteúdo igual ao do PlayerCard)
+                        return (
+                            <a key={badge.code || `sbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent.replace('...', `<img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" /><strong style="display: block; color: #ffd27f;">${badge.code}</strong><p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>`)}>
+                                <Badge code={badge.code} name={badge.name} />
+                            </a>
+                        );
+                    })}
+                   {player.badges.length > 5 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 5})</span>}
+               </div>
+            )}
+            {player.updatedat && ( <span className="text-xs opacity-60 whitespace-nowrap" style={{ color: "#b3a079" }}> {formatDate(player.updatedat)} </span> )}
+        </div>
 
-      {isExpanded && (
+        {isExpanded && (
         <div className="absolute top-0 left-0 w-full p-3 rounded-md z-20 flex flex-col shadow-2xl overflow-y-auto"
             style={{ background: "rgb(28, 22, 14)", border: "2px solid #c09b57", maxHeight: "calc(100vh - 100px)", minHeight:"450px" }}
             onClick={(e) => e.stopPropagation()}
@@ -309,10 +329,17 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
              <strong style={{ color: LABEL_TEXT_COLOR }}>{t.badges}:</strong>
              {player.badges && player.badges.length > 0 ? (
                 <div className="flex flex-wrap gap-1 mt-1 items-center">
-                    {player.badges.map((badge, idx) => <Badge key={badge.code || `expbadge-${idx}`} code={badge.code} name={badge.name} />)}
+                    {player.badges.map((badge, idx) => {
+                                const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">...</div>`; // (Conteúdo igual ao do PlayerCard)
+                                return (
+                                    <a key={badge.code || `expbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent.replace('...', `<img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" /><strong style="display: block; color: #ffd27f;">${badge.code}</strong><p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>`)}>
+                                        <Badge code={badge.code} name={badge.name} />
+                                    </a>
+                                );
+                            })}
+                        </div>
+                   ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
                 </div>
-             ) : ( <span style={{ color: "#ffeac2" }}>{' '}Nenhum emblema</span> )}
-           </div>
            <hr className="border-yellow-700/20 my-2.5"/>
            <div className="mt-2" style={{minHeight: "160px"}}>
              <DailyXpProgressChart data={expandedPlayerXpHistory} t={t} isLoading={loadingExpandedChart} chartHeight={150} />
@@ -759,8 +786,16 @@ const handlePageClick = (pageNumber) => {
                 </div>
                 <Footer t={t} />
             </div>
-        </>
-    );
+              <Tooltip 
+        id="badge-tooltip"
+        offset={20}
+className="custom-tooltip"
+style={{ zIndex: 999 }} 
+      />
+    </>
+  );
 };
+
+
 
 export default App;
