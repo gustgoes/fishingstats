@@ -176,7 +176,7 @@ const XpBar = React.memo(({ value, max, color = "#ffc76a", bg = "#312d19" }) => 
 
 const Footer = ({ t }) => {
     if (!t || !t.footer) return null;
-    const youtubeUrl = "https://www.youtube.com/@HabboPost"; // Link corrigido
+    const youtubeUrl = "youtube.com/@posthabbo?sub_confirmation=1"; // Link para se inscrever
     return (
         <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
             <div className="max-w-4xl mx-auto text-xs font-mono" style={{ color: "#a08c6c" }}>
