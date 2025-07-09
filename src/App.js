@@ -51,7 +51,7 @@ const translations = {
     autoUpdateStatus: "Atualização em segundo plano",
     nextPage: "Próxima", prevPage: "Anterior", page: "Página",
     growth: "Crescimento", today: "Hoje", thisWeek: "Esta semana", thisMonth: "Este mês",
-    rankingTabs: { geral: "Top Geral", diario: "Top Diário", semanal: "Top Semanal", mensal: "Top Mensal", badges: "Top Emblemas" },
+    rankingTabs: { geral: "Top Geral", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensal", badges: "Top Emblemas", ultimosPesquisados: "Últimos Pesquisados" },
     selectFlagSearch: "Selecione uma bandeira de país para habilitar a busca por usuário",
     xpChart: {
       title: "Progressão XP",
@@ -64,6 +64,11 @@ const translations = {
       copyright: "Copyrights © 2025 | FishStats. Todos os direitos reservados a este site da web. Este site não é de propriedade ou operado pela Sulake Corporation e não é parte do Habbo Hotel®.",
       creatorCredit: "Criado por",
       subscribeButton: "Inscreva-se"
+    },
+    medals: {
+        gold: "1º a chegar no nível 99",
+        silver: "2º a chegar no nível 99",
+        bronze: "3º a chegar no nível 99"
     }
   },
   en: {
@@ -78,7 +83,7 @@ const translations = {
     autoUpdateStatus: "Background update",
     nextPage: "Next", prevPage: "Previous", page: "Page",
     growth: "Growth", today: "Today", thisWeek: "This week", thisMonth: "This month",
-    rankingTabs: { geral: "Overall Top", diario: "Daily Top", semanal: "Weekly Top", mensal: "Monthly Top", badges: "Top Badges" },
+    rankingTabs: { geral: "Overall Top", diario: "Daily Top", semanal: "Weekly Top", mensal: "Monthly Top", badges: "Top Badges", ultimosPesquisados: "Last Searched" },
     selectFlagSearch: "Select a country flag to enable user search",
     xpChart: {
       title: "XP Progression",
@@ -91,6 +96,11 @@ const translations = {
       copyright: "Copyrights © 2025 | FishStats. All rights reserved to this website. This site is not owned or operated by Sulake Corporation and is not part of Habbo Hotel®.",
       creatorCredit: "Created by",
       subscribeButton: "Subscribe"
+    },
+    medals: {
+        gold: "1st to reach level 99",
+        silver: "2nd to reach level 99",
+        bronze: "3rd to reach level 99"
     }
   },
   es: {
@@ -105,7 +115,7 @@ const translations = {
     autoUpdateStatus: "Actualización en segundo plano",
     nextPage: "Siguiente", prevPage: "Anterior", page: "Página",
     growth: "Crecimiento", today: "Hoy", thisWeek: "Esta semana", thisMonth: "Este mes",
-    rankingTabs: { geral: "Top General", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensual", badges: "Top Placas" },
+    rankingTabs: { geral: "Top General", diario: "Top Diario", semanal: "Top Semanal", mensal: "Top Mensual", badges: "Top Placas", ultimosPesquisados: "Últimos Buscados" },
     selectFlagSearch: "Seleccione la bandera de un país para habilitar la búsqueda de usuarios",
     xpChart: {
       title: "Progresión de XP",
@@ -118,6 +128,11 @@ const translations = {
       copyright: "Copyrights © 2025 | FishStats. Todos los derechos reservados a este sitio web. Este sitio no es propiedad ni está operado por Sulake Corporation y no forma parte de Habbo Hotel®.",
       creatorCredit: "Creado por",
       subscribeButton: "Suscribirse"
+    },
+    medals: {
+        gold: "1º en alcanzar el nivel 99",
+        silver: "2º en alcanzar el nivel 99",
+        bronze: "3º en alcanzar el nivel 99"
     }
   }
 };
@@ -129,6 +144,13 @@ const FLAGS = [
     { code: "es", img: "/img/flags/es.png", label: "ES" },
 ];
 const getFlagImgForHotel = (hotelCode) => FLAGS.find(f => f.code === hotelCode)?.img || '';
+
+const getBadgeImagePath = (code) => {
+    if (code.endsWith('.gif') || code.endsWith('.png') || code.endsWith('.jpg') || code.endsWith('.jpeg') || code.endsWith('.webp') || code.endsWith('.svg')) {
+        return `/img/badges/${code}`;
+    }
+    return `/img/badges/${code}.png`;
+};
 
 // --- Constantes ---
 const LABEL_TEXT_COLOR = "#ffd27f";
@@ -176,7 +198,7 @@ const XpBar = React.memo(({ value, max, color = "#ffc76a", bg = "#312d19" }) => 
 
 const Footer = ({ t }) => {
     if (!t || !t.footer) return null;
-    const youtubeUrl = "https://www.youtube.com/@HabboPost"; // Link corrigido
+    const youtubeUrl = "https://www.youtube.com/@posthabbo?sub_confirmation=1"; // Link correto
     return (
         <footer className="w-full text-center p-6 mt-auto z-10" style={{ background: "rgba(0, 0, 0, 0.2)" }}>
             <div className="max-w-4xl mx-auto text-xs font-mono" style={{ color: "#a08c6c" }}>
@@ -234,14 +256,14 @@ const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClic
             {player.badges && player.badges.length > 0 ? (
                 <div className="flex flex-wrap gap-1 mt-1 items-center"> {player.badges.map((badge, idx) => {
                         const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">
-                            <img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" />
+                            <img src="${getBadgeImagePath(badge.code)}" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" onError="this.onerror=null;this.src='/img/badges/${badge.code}.gif';" />
                             <strong style="display: block; color: #ffd27f;">${badge.code}</strong>
                             <p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>
                         </div>`;
                         return (
-                            <a key={badge.code || `badge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent}>
+                            <button type="button" key={badge.code || `badge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent} className="focus:outline-none">
                                 <Badge code={badge.code} name={badge.name} />
-                            </a>
+                            </button>
                         );
                     })}
                 </div>
@@ -250,7 +272,7 @@ const PlayerCard = React.memo(({ player, t, dataIndexInRanking, handlePlayerClic
     </div>
 ));
 
-const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedPlayer, expandedProfile, expandedPlayerXpHistory, loadingExpandedChart, currentHotel }) => {
+const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedPlayer, expandedProfile, expandedPlayerXpHistory, loadingExpandedChart, currentHotel, level99Achievers }) => {
     const isExpanded = expandedPlayer && expandedPlayer.username === player.username && expandedPlayer.hotel === player.hotel;
     
     return (
@@ -266,6 +288,12 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
                     <img src={getFlagImgForHotel(player.hotel)} alt={player.hotel} className="w-4 h-auto mr-1.5" style={{imageRendering: 'pixelated'}} />
                 )}
               {capitalize(player.username)}
+              {currentHotel === 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.global_rank === 1 && <span role="img" aria-label="Gold Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.gold} (Global)`}>🥇</span>}
+              {currentHotel === 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.global_rank === 2 && <span role="img" aria-label="Silver Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.silver} (Global)`}>🥈</span>}
+              {currentHotel === 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.global_rank === 3 && <span role="img" aria-label="Bronze Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.bronze} (Global)`}>🥉</span>}
+              {currentHotel !== 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.hotel_rank === 1 && <span role="img" aria-label="Gold Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.gold} (${player.hotel})`}>🥇</span>}
+              {currentHotel !== 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.hotel_rank === 2 && <span role="img" aria-label="Silver Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.silver} (${player.hotel})`}>🥈</span>}
+              {currentHotel !== 'global' && level99Achievers.find(a => a.username === player.username && a.hotel === player.hotel)?.hotel_rank === 3 && <span role="img" aria-label="Bronze Medal" className="ml-1.5" data-tooltip-id="medal-tooltip" data-tooltip-content={`${t.medals.bronze} (${player.hotel})`}>🥉</span>}
             </p>
             {player.mission && ( <p className="text-xs font-mono truncate mt-0.5" style={{ color: "#b0a080" }} title={player.mission}> "{player.mission}" </p> )}
           </div>
@@ -280,13 +308,17 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
         {player.badges && player.badges.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1 items-center">
               {player.badges.slice(0, 5).map((badge, idx) => {
-                        const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">...</div>`; // (Conteúdo igual ao do PlayerCard)
+                        const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">
+                            <img src="${getBadgeImagePath(badge.code)}" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" onError="this.onerror=null;this.src='/img/badges/${badge.code}.gif';" />
+                            <strong style="display: block; color: #ffd27f;">${badge.code}</strong>
+                            <p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>
+                        </div>`;
                         return (
-                            <a key={badge.code || `sbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent.replace('...', `<img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" /><strong style="display: block; color: #ffd27f;">${badge.code}</strong><p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>`)}>
-                                <Badge code={badge.code} name={badge.name} />
-                            </a>
-                        );
-                    })}
+                                    <button type="button" key={badge.code || `sbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent} className="focus:outline-none">
+                                        <Badge code={badge.code} name={badge.name} />
+                                    </button>
+                                );
+                            })}
                    {player.badges.length > 5 && <span className="text-xs opacity-70 self-center" style={{color: "#ccc0a5"}}>(+{player.badges.length - 5})</span>}
                </div>
             )}
@@ -333,11 +365,15 @@ const RankingItem = React.memo(({ player, index, t, handlePlayerClick, expandedP
              {player.badges && player.badges.length > 0 ? (
                 <div className="flex flex-wrap gap-1 mt-1 items-center">
                     {player.badges.map((badge, idx) => {
-                                const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">...</div>`; // (Conteúdo igual ao do PlayerCard)
+                                const tooltipContent = `<div style="text-align: center; padding: 5px; font-family: monospace;">
+                                    <img src="${getBadgeImagePath(badge.code)}" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" onError="this.onerror=null;this.src='/img/badges/${badge.code}.gif';" />
+                                    <strong style="display: block; color: #ffd27f;">${badge.code}</strong>
+                                    <p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>
+                                </div>`;
                                 return (
-                                    <a key={badge.code || `expbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent.replace('...', `<img src="/img/badges/${badge.code}.png" alt="${badge.code}" style="width: 48px; height: 48px; margin: 0 auto 8px; image-rendering: pixelated; background: #332216; border-radius: 5px;" /><strong style="display: block; color: #ffd27f;">${badge.code}</strong><p style="font-size: 11px; margin-top: 4px; color: #ccb991;">${badge.description || badge.name || 'Descrição não disponível'}</p>`)}>
+                                    <button type="button" key={badge.code || `expbadge-${idx}`} data-tooltip-id="badge-tooltip" data-tooltip-html={tooltipContent} className="focus:outline-none">
                                         <Badge code={badge.code} name={badge.name} />
-                                    </a>
+                                    </button>
                                 );
                             })}
                         </div>
@@ -374,6 +410,8 @@ const App = () => {
     const [loadingExpandedChart, setLoadingExpandedChart] = useState(false);
     const [lastSearchedUsers, setLastSearchedUsers] = useState([]);
     const [searchHotel, setSearchHotel] = useState(''); // New state for search-specific hotel
+    const [level99Achievers, setLevel99Achievers] = useState([]);
+    const [globalLastSearchedUsers, setGlobalLastSearchedUsers] = useState([]);
 
     const profileCache = useRef({});
     const t = translations[lang] || translations["pt"];
@@ -462,7 +500,17 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
     const getDailyXpLogsFromSupabase = useCallback(async (playerName, playerHotel) => {
        if (!playerName || !playerHotel) return { data: [], error: new Error("Nome do jogador ou hotel não fornecido.") };
        try {
-           const { data: xpLogs, error: fetchError } = await supabase.from('xp_history').select('logged_at, experience, level').eq('username', playerName.toLowerCase()).eq('hotel', playerHotel).order('logged_at', { ascending: true }).limit(200);
+           const ninetyDaysAgo = new Date();
+           ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+           const { data: xpLogs, error: fetchError } = await supabase
+               .from('xp_history')
+               .select('logged_at, experience, level')
+               .eq('username', playerName.toLowerCase())
+               .eq('hotel', playerHotel)
+               .gte('logged_at', ninetyDaysAgo.toISOString())
+               .order('logged_at', { ascending: true });
+
            if (fetchError) throw fetchError;
            if (!xpLogs) return { data: [], error: null };
            const formattedData = xpLogs.map(log => {
@@ -493,6 +541,31 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
                    logged_at: new Date().toISOString()
                });
            }
+
+           if (player.level === 99) {
+                const { data: existingAchiever } = await supabase
+                    .from('level_99_achievers')
+                    .select('username')
+                    .eq('username', player.username.toLowerCase())
+                    .eq('hotel', player.hotel)
+                    .single();
+
+                if (!existingAchiever) {
+                    const { count, error } = await supabase
+                        .from('level_99_achievers')
+                        .select('count', { count: 'exact' })
+                        .eq('hotel', player.hotel);
+
+                    if (error) throw error;
+
+                    await supabase.from('level_99_achievers').insert({
+                        username: player.username.toLowerCase(),
+                        hotel: player.hotel,
+                        rank: (count || 0) + 1,
+                    });
+                }
+           }
+
            return true;
        } catch (err) {
            return false;
@@ -572,30 +645,165 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
                     const updated = [newPlayer, ...prev.filter(p => p.username !== newPlayer.username || p.hotel !== newPlayer.hotel)];
                     return updated.slice(0, 5); // Keep only the last 5 searched users
                 });
+
+                // Record the search in the new table
+                await supabase.from('last_searched_players').upsert({
+                    username: newPlayer.username.toLowerCase(),
+                    hotel: newPlayer.hotel,
+                    searched_at: new Date().toISOString()
+                }, { onConflict: ['username', 'hotel'] });
+
             } else { setError(t.xpChart.saveError || "Falha ao salvar dados."); }
         } catch (err) {
             setError(err.message); setData(null);
         } finally { setLoading(false); }
-    }, [username, hotel, t, savePlayerGlobal, getDailyXpLogsFromSupabase, fetchPlayerGains, fetchRankingGlobal]);
+    }, [username, hotel, t, savePlayerGlobal, getDailyXpLogsFromSupabase, fetchPlayerGains, fetchRankingGlobal, searchHotel]);
     
     // --- useEffects ---
     useEffect(() => {
-        setLang(hotelLangMap[hotel] || "pt");
         setError(""); setData(null); setPlayerGains(null);
         setExpandedPlayer(null); setExpandedProfile(null);
         setCurrentPage(1);
         fetchRankingGlobal({ setLoadingState: true });
-    }, [hotel]);
+    }, [hotel, fetchRankingGlobal]);
 
     useEffect(() => {
         const channel = supabase.channel('ranking-changes')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'ranking' },
             (payload) => {
-                fetchRankingGlobal({});
+                if (payload.eventType === 'INSERT') {
+                    setRanking(prevRanking => [...prevRanking, payload.new]);
+                } else if (payload.eventType === 'UPDATE') {
+                    setRanking(prevRanking => prevRanking.map(player => player.id === payload.new.id ? payload.new : player));
+                }
             }
           ).subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, [fetchRankingGlobal]);
+    }, []);
+
+    useEffect(() => {
+        const fetchLevel99Achievers = async () => {
+            const { data, error } = await supabase
+                .from('level_99_achievers')
+                .select('username, hotel, hotel_rank, global_rank')
+                .order('global_rank', { ascending: true });
+
+            if (error) {
+                console.error("Error fetching level 99 achievers:", error);
+            } else {
+                setLevel99Achievers(data);
+            }
+        };
+
+        const fetchLastSearchedPlayers = async () => {
+            const { data, error } = await supabase
+                .from('last_searched_players')
+                .select('username, hotel')
+                .order('searched_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                console.error("Error fetching last searched players:", error);
+                setGlobalLastSearchedUsers([]);
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                setGlobalLastSearchedUsers([]);
+                return;
+            }
+
+            const fetchedPlayers = await Promise.all(data.map(async (user) => {
+                try {
+                    const hotelToSearch = user.hotel;
+                    const usernameKey = user.username.toLowerCase();
+
+                    const userRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/users?name=${usernameKey}`);
+                    if (!userRes.ok) {
+                        console.warn(`Could not fetch user data for ${usernameKey} (${hotelToSearch}):`, userRes.status);
+                        return null;
+                    }
+                    const userData = await userRes.json();
+                    const uniqueId = userData.uniqueId;
+                    if (!uniqueId) {
+                        console.warn(`Invalid user ID for ${usernameKey} (${hotelToSearch})`);
+                        return null;
+                    }
+
+                    const fishingRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/skills/${uniqueId}?skillType=FISHING`);
+                    if (!fishingRes.ok) {
+                        console.warn(`Could not fetch fishing data for ${usernameKey} (${hotelToSearch}):`, fishingRes.status);
+                        return null;
+                    }
+                    const fishingData = await fishingRes.json();
+                    if (typeof fishingData.level === "undefined") {
+                        console.warn(`No fishing skills found for ${usernameKey} (${hotelToSearch})`);
+                        return null;
+                    }
+
+                    let profile = null;
+                    try {
+                        const profileRes = await fetch(`https://origins.habbo.${hotelToSearch}/api/public/users/${uniqueId}/profile`);
+                        if (profileRes.ok) profile = await profileRes.json();
+                    } catch (profileError) {
+                        console.warn("Error fetching profile:", profileError.message);
+                    }
+
+                    const newApiBadges = Array.isArray(userData.selectedBadges) ? userData.selectedBadges.map(b => ({ code: b.code, name: b.name, description: b.description })) : [];
+                    let combinedBadges = [...newApiBadges];
+
+                    const { data: existingPlayerData } = await supabase.from('ranking').select('badges').eq('username', usernameKey).eq('hotel', hotelToSearch).single();
+                    if (existingPlayerData && Array.isArray(existingPlayerData.badges)) {
+                        const currentApiBadgeCodes = new Set(newApiBadges.map(b => b.code));
+                        existingPlayerData.badges.forEach(dbBadge => {
+                            if (dbBadge && dbBadge.code && !currentApiBadgeCodes.has(dbBadge.code)) combinedBadges.push(dbBadge);
+                        });
+                    }
+                    const uniqueBadgeCodes = new Set();
+                    const finalUniqueBadges = combinedBadges.filter(badge => {
+                       if (badge && badge.code && !uniqueBadgeCodes.has(badge.code)) {
+                           uniqueBadgeCodes.add(badge.code);
+                           return true;
+                       }
+                       return false;
+                    });
+
+                    return {
+                        username: usernameKey,
+                        level: fishingData.level,
+                        experience: fishingData.experience,
+                        avatarUrl: `https://www.habbo.${hotelToSearch}/habbo-imaging/avatarimage?figure=${userData.figureString}&size=l&direction=2&head_direction=2&gesture=sml&action=wav`,
+                        mission: userData.motto,
+                        badges: finalUniqueBadges,
+                        fishCaught: fishingData.fishCaught,
+                        goldFishCaught: fishingData.goldFishCaught,
+                        rod: fishingData.rod,
+                        hotel: hotelToSearch,
+                        online: profile?.online ?? userData.online,
+                        lastaccesstime: profile?.lastaccesstime ?? null,
+                        membersince: profile?.membersince ?? null,
+                        updatedat: new Date().toISOString(),
+                    };
+                } catch (err) {
+                    console.error("Error fetching details for last searched player:", user.username, err);
+                    return null;
+                }
+            }));
+            setGlobalLastSearchedUsers(fetchedPlayers.filter(Boolean)); // Filter out nulls
+        };
+
+        fetchLevel99Achievers();
+        fetchLastSearchedPlayers();
+
+        const channel = supabase.channel('last-searched-players-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'last_searched_players' },
+                (payload) => {
+                    fetchLastSearchedPlayers(); // Re-fetch to get the latest 5
+                }
+            ).subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     // --- Manipuladores de Eventos ---
     const handlePlayerClick = useCallback(async (player) => {
@@ -622,13 +830,21 @@ const handlePageClick = (pageNumber) => {
     // --- Cálculos para Renderização ---
     const sortedRanking = React.useMemo(() => {
         const sorted = [...ranking];
-        if (rankingPeriod === 'geral') return sorted.sort((a, b) => b.experience - a.experience);
+        sorted.sort((a, b) => {
+            if (a.level !== b.level) {
+                return b.level - a.level;
+            }
+            return b.experience - a.experience;
+        });
+
+        if (rankingPeriod === 'geral') return sorted;
         if (rankingPeriod === 'diario') return sorted.sort((a, b) => (b.gains?.today || 0) - (a.gains?.today || 0));
         if (rankingPeriod === 'semanal') return sorted.sort((a, b) => (b.gains?.week || 0) - (a.gains?.week || 0));
         if (rankingPeriod === 'mensal') return sorted.sort((a, b) => (b.gains?.month || 0) - (a.gains?.month || 0));
         if (rankingPeriod === 'badges') return sorted.sort((a, b) => (b.badges?.length || 0) - (a.badges?.length || 0));
+        if (rankingPeriod === 'ultimosPesquisados') return globalLastSearchedUsers;
         return sorted;
-    }, [ranking, rankingPeriod]);
+    }, [ranking, rankingPeriod, globalLastSearchedUsers]);
 
     const dataIndexInRanking = data ? sortedRanking.findIndex((p) => p.username === data.username && p.hotel === data.hotel) : -1;
     const totalPages = Math.ceil(sortedRanking.length / ITEMS_PER_PAGE);
@@ -661,7 +877,7 @@ const handlePageClick = (pageNumber) => {
                 <div className="relative z-10 w-full max-w-4xl rounded-lg px-4 sm:px-6 py-8 mb-10" >
                     <div className="flex items-center justify-center gap-4 sm:gap-7 mb-6">
                         {FLAGS.map((flag) => (
-                            <div key={flag.code} onClick={() => {setHotel(flag.code); setRankingPeriod('geral'); setUsername(''); setData(null);}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
+                            <div key={flag.code} onClick={() => {setHotel(flag.code); setLang(hotelLangMap[flag.code] || "pt"); setRankingPeriod('geral'); setUsername(''); setData(null);}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
                                 <img src={flag.img} alt={flag.label} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
                                 <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace" }}> {flag.label} </span>
                             </div>
@@ -749,6 +965,7 @@ const handlePageClick = (pageNumber) => {
                                         expandedPlayerXpHistory={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? expandedPlayerXpHistory : []}
                                         loadingExpandedChart={expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel ? loadingExpandedChart : false}
                                         currentHotel={hotel}
+                                        level99Achievers={level99Achievers}
                                     />
                                 ))}
                             </ul>
@@ -831,6 +1048,12 @@ const handlePageClick = (pageNumber) => {
         offset={20}
 className="custom-tooltip"
 style={{ zIndex: 999 }} 
+      />
+      <Tooltip 
+        id="medal-tooltip"
+        offset={10}
+        className="custom-medal-tooltip"
+        style={{ zIndex: 1000 }} 
       />
     </>
   );
