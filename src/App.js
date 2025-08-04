@@ -412,6 +412,7 @@ const App = () => {
     const [searchHotel, setSearchHotel] = useState(''); // New state for search-specific hotel
     const [level99Achievers, setLevel99Achievers] = useState([]);
     const [globalLastSearchedUsers, setGlobalLastSearchedUsers] = useState([]);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     const profileCache = useRef({});
     const t = translations[lang] || translations["pt"];
@@ -805,6 +806,15 @@ const { data: rankingData, error: rpcError } = await supabase.rpc('get_ranking_f
         return () => { supabase.removeChannel(channel); };
     }, []);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // --- Manipuladores de Eventos ---
     const handlePlayerClick = useCallback(async (player) => {
         if (expandedPlayer?.username === player.username && expandedPlayer?.hotel === player.hotel) {
@@ -870,16 +880,16 @@ const handlePageClick = (pageNumber) => {
     // --- Renderização ---
     return (
         <>
-            <div className="min-h-screen w-full flex flex-col items-center font-mono" style={{ background: "#101217", position: "relative", overflowX: "hidden" }} >
+            <div className={`min-h-screen w-full flex flex-col items-center font-mono ${isMobile ? 'p-4' : ''}`} style={{ background: "#101217", position: "relative", overflowX: "hidden" }} >
                 <div style={{ background: "url('/img/fundo.png') no-repeat center center", backgroundSize: "798px 671px", width: "100vw", height: "100vh", position: "fixed", zIndex: 0, top: 0, left: 0 }} />
-                <img src="/img/banner.png" alt="Fishing Banner" width={460} height={90} className="mx-auto select-none" style={{ marginTop: "max(5vh, 20px)", marginBottom: 20, imageRendering: "pixelated", display: "block", position: "relative", zIndex: 2, filter: "drop-shadow(0 6px 20px #0009)", pointerEvents: "none" }} />
+                <img src="/img/banner.png" alt="Fishing Banner" width={isMobile ? 300 : 460} height={isMobile ? 60 : 90} className="mx-auto select-none" style={{ marginTop: "max(5vh, 20px)", marginBottom: 20, imageRendering: "pixelated", display: "block", position: "relative", zIndex: 2, filter: "drop-shadow(0 6px 20px #0009)", pointerEvents: "none" }} />
                 
-                <div className="relative z-10 w-full max-w-4xl rounded-lg px-4 sm:px-6 py-8 mb-10" >
-                    <div className="flex items-center justify-center gap-4 sm:gap-7 mb-6">
+                <div className={`relative z-10 w-full ${isMobile ? 'max-w-sm' : 'max-w-4xl'} rounded-lg px-4 sm:px-6 py-8 mb-10`} >
+                    <div className={`flex items-center justify-center ${isMobile ? 'gap-2' : 'gap-4 sm:gap-7'} mb-6`}>
                         {FLAGS.map((flag) => (
                             <div key={flag.code} onClick={() => {setHotel(flag.code); setLang(hotelLangMap[flag.code] || "pt"); setRankingPeriod('geral'); setUsername(''); setData(null);}} className="flex flex-col items-center" style={{ cursor: "pointer", opacity: hotel === flag.code ? 1 : 0.5, transition: "opacity 0.2s, transform 0.2s", transform: hotel === flag.code ? "scale(1.05)" : "scale(1)", borderRadius: 8, border: hotel === flag.code ? "2.5px solid #ffc76a" : "2.5px solid transparent", boxShadow: hotel === flag.code ? "0 3px 12px #e7b76755" : "none", background: "#1c1712", padding: "5px" }}>
-                                <img src={flag.img} alt={flag.label} style={{ width: 48, height: 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
-                                <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace" }}> {flag.label} </span>
+                                <img src={flag.img} alt={flag.label} style={{ width: isMobile ? 32 : 48, height: isMobile ? 21 : 32, objectFit: "cover", borderRadius: 5, display: "block", border: "1px solid #443322" }} />
+                                <span className="block text-xs text-center mt-1.5" style={{ color: hotel === flag.code ? "#ffc76a" : "#ccc0a5", fontWeight: "bold", letterSpacing: 0.5, fontFamily: "'Press Start 2P', monospace", fontSize: isMobile ? "8px" : "10px" }}> {flag.label} </span>
                             </div>
                         ))}
                     </div>
@@ -891,7 +901,7 @@ const handlePageClick = (pageNumber) => {
                                 {t.selectFlagSearch}
                             </p>
                         )}
-                        <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)" }} disabled={hotel === 'global' && !searchHotel} />
+                        <input type="text" placeholder={t.placeholder} value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !loading && username.trim() && fetchStats()} className="border rounded p-3 w-full text-base font-mono" style={{ background: "rgba(15,10,5,0.5)", color: "#ffedbe", border: "1.5px solid #a9865a", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.3)", fontSize: isMobile ? '14px' : '16px' }} disabled={hotel === 'global' && !searchHotel} />
                         {hotel === 'global' && (
                             <div className="flex items-center justify-center gap-2 mt-4">
                                 {FLAGS.filter(flag => flag.code !== 'global').map((flag) => (
@@ -902,7 +912,7 @@ const handlePageClick = (pageNumber) => {
                                 ))}
                             </div>
                         )}
-                        <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s" }} onClick={fetchStats} disabled={loading || !username.trim() || (hotel === 'global' && !searchHotel)} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
+                        <button className="w-full mt-4 font-bold text-sm py-3 rounded-md" style={{ background: "linear-gradient(to bottom, #e8a235, #c07c1e)", color: "#fff8f0", border: "1px solid #a9865a", textShadow: "1px 1px 2px #00000070", letterSpacing: 1.5, fontFamily: "'Press Start 2P', monospace", boxShadow: "0 3px 8px rgba(0,0,0,0.3), inset 0 1px 1px #fff5c77c", opacity: loading || !username.trim() ? 0.6 : 1, cursor: loading || !username.trim() ? "not-allowed" : "pointer", transition: "background 0.2s, transform 0.1s", fontSize: isMobile ? '12px' : '14px' }} onClick={fetchStats} disabled={loading || !username.trim() || (hotel === 'global' && !searchHotel)} onMouseDown={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(0.98)")} onMouseUp={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.transform = "scale(1)")} >
                             {loading && data === null ? t.loading : t.button}
                         </button>
                     </div>
@@ -928,11 +938,11 @@ const handlePageClick = (pageNumber) => {
                     {error && ( <div className="text-center text-red-300 font-mono font-semibold my-4 p-3 bg-red-900 bg-opacity-50 rounded-md border border-red-700"> {error} </div> )}
                     
                     {data && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 mb-6">
-                            <div className="lg:col-span-2">
+                        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-x-6 gap-y-4 mb-6`}>
+                            <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
                                 <PlayerCard player={data} t={t} dataIndexInRanking={dataIndexInRanking} handlePlayerClick={handlePlayerClick} playerGains={playerGains} />
                             </div>
-                            <div className="lg:col-span-1">
+                            <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
                                 <DailyXpProgressChart data={dailyXpHistory} t={t} isLoading={loadingChart} chartHeight={300} />
                             </div>
                         </div>
@@ -942,9 +952,9 @@ const handlePageClick = (pageNumber) => {
                     
                     <div className="flex justify-center mb-4 mt-8"> <img src="/img/ranking.png" alt="Ranking" style={{ height: 64, objectFit: "contain", filter: "drop-shadow(0 3px 8px #00000080)" }} /> </div>
 
-                    <div className="flex justify-center gap-2 mb-4">
+                    <div className={`flex justify-center ${isMobile ? 'gap-1' : 'gap-2'} mb-4 flex-wrap`}>
                         {Object.keys(t.rankingTabs).map(period => (
-                            <button key={period} onClick={() => setRankingPeriod(period)} style={rankingPeriod === period ? activeTabStyle : tabStyle}>
+                            <button key={period} onClick={() => setRankingPeriod(period)} style={rankingPeriod === period ? {...activeTabStyle, fontSize: isMobile ? '8px' : '10px', padding: isMobile ? '6px 10px' : '8px 16px'} : {...tabStyle, fontSize: isMobile ? '8px' : '10px', padding: isMobile ? '6px 10px' : '8px 16px'}}>
                                 {t.rankingTabs[period]}
                             </button>
                         ))}
@@ -952,7 +962,7 @@ const handlePageClick = (pageNumber) => {
 
                     {paginatedRanking.length > 0 ? (
                         <>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
+                            <ul className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'} gap-x-4 gap-y-4`}>
                                 {paginatedRanking.map((player, index) => (
                                     <RankingItem
                                         key={`${player.username}-${player.hotel}-${index}`}
@@ -970,12 +980,12 @@ const handlePageClick = (pageNumber) => {
                                 ))}
                             </ul>
                             {totalPages > 1 && (
-    <div className="flex justify-center items-center mt-6 font-mono gap-2 text-sm">
+    <div className={`flex justify-center items-center mt-6 font-mono ${isMobile ? 'gap-1' : 'gap-2'} text-sm`}>
         {/* Botão Anterior */}
         <button 
             onClick={handlePrevPage} 
             disabled={currentPage === 1}
-            className="px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" 
+            className={`px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors ${isMobile ? 'text-xs' : ''}`}
             style={{ background: currentPage === 1 ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}
         >
             {t.prevPage}
@@ -984,7 +994,7 @@ const handlePageClick = (pageNumber) => {
         {/* Números das Páginas */}
         {(() => {
             const pageNumbers = [];
-            const pageRange = 5; // Quantos números mostrar ao redor da página atual
+            const pageRange = isMobile ? 2 : 5; // Quantos números mostrar ao redor da página atual
             
             for (let i = 1; i <= totalPages; i++) {
                 if (i === 1 || i === totalPages || (i >= currentPage - pageRange && i <= currentPage + pageRange)) {
@@ -1009,7 +1019,7 @@ const handlePageClick = (pageNumber) => {
                     <button 
                         key={index} 
                         onClick={() => handlePageClick(page)}
-                        className="w-8 h-8 rounded transition-colors"
+                        className={`w-8 h-8 rounded transition-colors ${isMobile ? 'text-xs' : ''}`}
                         style={{
                             color: page === currentPage ? '#1a150e' : '#ffeac2',
                             background: page === currentPage ? '#ffc76a' : 'rgba(74,57,30,0.8)',
@@ -1029,7 +1039,7 @@ const handlePageClick = (pageNumber) => {
         <button 
             onClick={handleNextPage} 
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors" 
+            className={`px-3 py-1.5 rounded disabled:opacity-50 hover:bg-yellow-700/30 transition-colors ${isMobile ? 'text-xs' : ''}`}
             style={{ background: (currentPage === totalPages || totalPages === 0) ? "rgba(42,34,21,0.8)" : "rgba(74,57,30,0.8)", color: "#ffeac2", border: "1.5px solid #c79b5b" }}
         >
             {t.nextPage}
